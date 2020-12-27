@@ -1,9 +1,11 @@
-package com.z.fileselectorlib.bean;
+package com.z.fileselectorlib.Objects;
+
+import com.z.fileselectorlib.Utils.FileUtil;
 
 public class FileInfo {
-    public enum FileType{Folder,Video,Audio,Image,Unknown}
+    public enum FileType{Folder,Video,Audio,Image,Unknown,Parent}
     private String FileName;
-    private int SubFileNum;
+    private long FileCount;//如果是文件夹则表示子目录项数,如果不是文件夹则表示文件大小，-1不显示
     private String FileLastUpdateTime;
     private String FilePath;
     private FileType fileType;
@@ -16,14 +18,18 @@ public class FileInfo {
         FileName = fileName;
     }
 
-    public int getSubFileNum() {
-        if (fileType== FileType.Folder)
-            return SubFileNum;
-        else return 0;
+    public String getFileCount() {
+        if (fileType== FileType.Parent)
+            return "";
+        else if (fileType== FileType.Folder)
+            return "共"+ FileCount +"项";
+        else {
+            return FileUtil.getFileSize(FileCount);
+        }
     }
 
-    public void setSubFileNum(int subFileNum) {
-        SubFileNum = subFileNum;
+    public void setFileCount(long fileCount) {
+        FileCount = fileCount;
     }
 
     public String getFileLastUpdateTime() {
@@ -48,5 +54,12 @@ public class FileInfo {
 
     public void setFileType(FileType fileType) {
         this.fileType = fileType;
+    }
+
+    public boolean FileFilter(FileType[] types){
+        for (FileType type:types) {
+            if (this.fileType==type)return true;
+        }
+        return false;
     }
 }
