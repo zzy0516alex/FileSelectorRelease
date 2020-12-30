@@ -1,6 +1,7 @@
 package com.z.fileselectorlib.adapter;
 
 import android.content.Context;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +16,7 @@ import com.z.fileselectorlib.R;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 public class FileListAdapter extends BaseAdapter {
 
@@ -88,13 +90,19 @@ public class FileListAdapter extends BaseAdapter {
         viewHolder.tvFileCount.setText(FileList.get(position).getFileCount());
         viewHolder.tvFileDate.setText(FileList.get(position).getFileLastUpdateTime());
         setIcon(position, viewHolder);
+        if (FileList.get(position).getFileType()== FileInfo.FileType.Parent){
+            ViewShow(viewHolder.llInfo,View.INVISIBLE,0);
+            viewHolder.tvFileName.setGravity(Gravity.CENTER_VERTICAL);
+        }else {
+            ViewShow(viewHolder.llInfo,View.VISIBLE,25);
+        }
 
         if (isSelect && FileList.get(position).getFileType()!= FileInfo.FileType.Parent)
             viewHolder.ckSelector.setVisibility(View.VISIBLE);
         else viewHolder.ckSelector.setVisibility(View.INVISIBLE);
 
-        if (SelectionMap !=null) {
-                viewHolder.ckSelector.setChecked(SelectionMap.get(position));
+        if (SelectionMap !=null && isSelect && viewHolder.ckSelector!=null) {
+                viewHolder.ckSelector.setChecked(Objects.isNull(SelectionMap.get(position)) ? false : (boolean) SelectionMap.get(position));
         }
 
         return convertView;
@@ -108,8 +116,8 @@ public class FileListAdapter extends BaseAdapter {
                 break;
             case Parent:{
                 viewHolder.ivFileIcon.setImageResource(R.mipmap.back_to_parent);
-                viewHolder.llInfo.setVisibility(View.INVISIBLE);
-                viewHolder.tvFileName.setPadding(20,50,0,-10);
+//                viewHolder.llInfo.setVisibility(View.INVISIBLE);
+//                viewHolder.tvFileName.setPadding(20,50,0,-10);
             }
                 break;
             case Image:{
@@ -131,6 +139,13 @@ public class FileListAdapter extends BaseAdapter {
             default:{
             }
         }
+    }
+
+    private void ViewShow(ViewGroup view,int visible, int dp) {
+        view.setVisibility(visible);
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        params.height = (int)(dp*mContext.getResources().getDisplayMetrics().density);
+        view.setLayoutParams(params);
     }
     public static class  ViewHolder{
         public LinearLayout llInfo;

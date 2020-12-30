@@ -1,8 +1,15 @@
 package com.z.fileselectorlib.Utils;
 
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
+
+import com.z.fileselectorlib.Objects.BasicParams;
+
 import java.io.File;
 import java.text.Collator;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -234,5 +241,24 @@ public class FileUtil {
             }
 
         });
+    }
+
+    public static ArrayList<String> getRelativePaths(String path){
+        ArrayList<String>paths=new ArrayList<>();
+        if (path.contains(BasicParams.BasicPath)){
+            int startIndex=path.indexOf(BasicParams.BasicPath)+BasicParams.BasicPath.length();
+            String rawPath=path.substring(startIndex);
+            String[]p=rawPath.split("/");
+            for (String l :
+                    p) {
+                if (!l.equals(""))paths.add(l);
+            }
+        }
+        return paths;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static String mergeAbsolutePath(ArrayList<String>paths){
+        return BasicParams.BasicPath+File.separator+String.join("/",paths);
     }
 }

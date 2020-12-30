@@ -6,6 +6,9 @@ import android.content.Intent;
 import com.z.fileselectorlib.Objects.BasicParams;
 import com.z.fileselectorlib.Objects.FileInfo;
 
+import java.io.File;
+import java.util.Arrays;
+
 public class FileSelectorSettings {
 
     private BasicParams basicParams;
@@ -19,6 +22,10 @@ public class FileSelectorSettings {
     }
 
     public FileSelectorSettings setRootPath(String path){
+        File[] test=(new File(path)).listFiles();
+        if (test==null){
+            throw new IllegalArgumentException("初始路径不是一个目录或无权限");
+        }
         basicParams.setRootPath(path);
         return this;
     }
@@ -38,7 +45,22 @@ public class FileSelectorSettings {
         return this;
     }
     public FileSelectorSettings setFileTypesToSelect(FileInfo.FileType ... fileTypes){
-        basicParams.setFileTypes(fileTypes);
+        if (Arrays.asList(fileTypes).contains(FileInfo.FileType.Parent)){
+            throw new IllegalArgumentException("类型不能包含parent");
+        }
+        else basicParams.setFileTypes(fileTypes);
+        return this;
+    }
+
+    public FileSelectorSettings setMoreOPtions(String[] optionsName, BasicParams.OnOptionClick...onOptionClicks){
+        if (optionsName.length!=onOptionClicks.length){
+            throw new IllegalArgumentException("选项名和点击响应必须一一对应");
+        }
+        else {
+            basicParams.setNeedMoreOptions(true);
+            basicParams.setOptionsName(optionsName);
+            basicParams.setOnOptionClicks(onOptionClicks);
+        }
         return this;
     }
 

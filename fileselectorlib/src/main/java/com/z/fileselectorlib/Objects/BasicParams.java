@@ -1,6 +1,9 @@
 package com.z.fileselectorlib.Objects;
 
+import android.app.Activity;
 import android.os.Environment;
+
+import java.util.ArrayList;
 
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Audio;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Folder;
@@ -15,6 +18,10 @@ public class BasicParams {
     private String tips;
     private String color;
     private FileInfo.FileType[] fileTypes;
+    private boolean needMoreOptions;
+    private String[] OptionsName;
+    private OnOptionClick[] onOptionClicks;
+
 
     public String getRootPath() {
         return RootPath;
@@ -56,6 +63,30 @@ public class BasicParams {
         return fileTypes;
     }
 
+    public boolean isNeedMoreOptions() {
+        return needMoreOptions;
+    }
+
+    public void setNeedMoreOptions(boolean needMoreOptions) {
+        this.needMoreOptions = needMoreOptions;
+    }
+
+    public String[] getOptionsName() {
+        return OptionsName;
+    }
+
+    public void setOptionsName(String[] optionsName) {
+        OptionsName = optionsName;
+    }
+
+    public OnOptionClick[] getOnOptionClicks() {
+        return onOptionClicks;
+    }
+
+    public void setOnOptionClicks(OnOptionClick[] onOptionClicks) {
+        this.onOptionClicks = onOptionClicks;
+    }
+
     public static BasicParams getInstance() {
         return InstanceHolder.INSTANCE;
     }
@@ -67,10 +98,15 @@ public class BasicParams {
         params.setTips("请选择文件");
         params.setColor("#1E90FF");
         params.setFileTypes(Folder,Video,Audio,Image,Unknown);
+        params.setNeedMoreOptions(false);
         return params;
     }
 
     private static final class InstanceHolder {
         private static final BasicParams INSTANCE = new BasicParams();
+    }
+
+    public interface OnOptionClick{
+        void onclick(Activity activity, int position, String currentPath, ArrayList<String> FilePathSelected);
     }
 }

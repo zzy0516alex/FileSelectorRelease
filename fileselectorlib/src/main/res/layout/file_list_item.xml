@@ -35,14 +35,14 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/FileCount"
                 android:text="共2项"
-                android:textSize="15dp"
+                android:textSize="15sp"
                 android:textColor="@color/gray"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/FileDate"
                 android:text="2020-12-23"
-                android:textSize="15dp"
+                android:textSize="15sp"
                 android:layout_marginStart="8dp"
                 android:textColor="@color/gray"/>
         </LinearLayout>

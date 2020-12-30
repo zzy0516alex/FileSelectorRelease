@@ -4,22 +4,30 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.ColorUtils;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.z.fileselectorlib.Objects.BasicParams;
 import com.z.fileselectorlib.Objects.FileInfo;
@@ -28,6 +36,7 @@ import com.z.fileselectorlib.Utils.PermissionUtil;
 import com.z.fileselectorlib.Utils.StatusBarUtil;
 import com.z.fileselectorlib.Utils.TimeUtil;
 import com.z.fileselectorlib.adapter.FileListAdapter;
+import com.z.fileselectorlib.adapter.NavigationAdapter;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -39,18 +48,25 @@ public class FileSelectorActivity extends AppCompatActivity {
 
     private ArrayList<FileInfo> currentFileList = new ArrayList<>();
     private ArrayList<String> FileSelected = new ArrayList<>();
+    private ArrayList<String> RelativePaths = new ArrayList<>();
+    private String currentPath;
     private ListView lvFileList;
     private TextView tvTips;
     private TextView tv_select_num;
-    private LinearLayout llTopView;
+    private RelativeLayout llTopView;
     private ImageView imBack;
     private LinearLayout llBottomView;
     private Button select_confirm;
     private Button select_cancel;
+    private RecyclerView navigation_view;
+    private LinearLayout llRoot;
+    private NavigationAdapter navigationAdapter;
+    private ImageView imMore;
+    private PopupWindow moreOptions;
     private Window window;
     private AdapterView.OnItemClickListener onItemClickListener;
     private AdapterView.OnItemLongClickListener itemLongClickListener;
-    private FileListAdapter adapter;
+    private FileListAdapter fileListAdapter;
     private Activity activity;
     private boolean onSelect=false;
     private int SelectNum=0;
@@ -69,6 +85,9 @@ public class FileSelectorActivity extends AppCompatActivity {
         llBottomView=findViewById(R.id.bottom_view);
         select_confirm=findViewById(R.id.select_confirm);
         select_cancel=findViewById(R.id.select_cancel);
+        navigation_view=findViewById(R.id.navigation_view);
+        llRoot=findViewById(R.id.root);
+        imMore=findViewById(R.id.more);
         activity=this;
         setOnItemClick();
         setOnItemLongClick();
@@ -79,19 +98,108 @@ public class FileSelectorActivity extends AppCompatActivity {
         initBackBtn();
         initTopView();
         initBottomView();
+        initRootButton();
+        initMoreOptionsView();
 
 
         if (PermissionUtil.isStoragePermissionGranted(this)) {
             //get init files
             String initPath= BasicParams.getInstance().getRootPath();
-            getFileList(initPath);
-            adapter=new FileListAdapter(currentFileList,this);
-            lvFileList.setAdapter(adapter);
-            lvFileList.setOnItemClickListener(onItemClickListener);
-            lvFileList.setOnItemLongClickListener(itemLongClickListener);
+            currentPath=initPath;
+            File[] test=(new File(initPath)).listFiles();
+            if (test!=null)getFileList(initPath);
+            setFileList();
+            setPathView(initPath);
 
         }
 
+    }
+
+    private void initMoreOptionsView() {
+        if (BasicParams.getInstance().isNeedMoreOptions())imMore.setVisibility(View.VISIBLE);
+        else imMore.setVisibility(View.INVISIBLE);
+        imMore.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //加载布局
+                LinearLayout layout = (LinearLayout) LayoutInflater.from(activity).inflate(R.layout.popup_more_options, null);
+                //找到布局的控件
+                ListView listView = (ListView) layout.findViewById(R.id.options);
+                //设置适配器
+                listView.setAdapter(new ArrayAdapter<String>(activity,R.layout.option_list_item,R.id.option_text,BasicParams.getInstance().getOptionsName()));
+                // 实例化popupWindow
+                moreOptions = new PopupWindow(layout, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                //控制键盘是否可以获得焦点
+                moreOptions.setFocusable(true);
+                //设置popupWindow弹出窗体的背景
+                moreOptions.setBackgroundDrawable(getDrawable(R.drawable.popwindow_white));
+                BackGroundAlpha(0.6f);
+                moreOptions.showAsDropDown(imMore,-imMore.getWidth()+50,-imMore.getHeight()+30);
+                moreOptions.setOnDismissListener(new PopupWindow.OnDismissListener() {
+                    @Override
+                    public void onDismiss() {
+                        BackGroundAlpha(1.0f);
+                    }
+                });
+                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        moreOptions.dismiss();
+                        BasicParams.getInstance().getOnOptionClicks()[position].onclick(activity,position,currentPath,FileSelected);
+                        //刷新列表
+                        getFileList(currentPath);
+                        fileListAdapter.updateFileList(currentFileList);
+                        if (onSelect)fileListAdapter.clearSelections();
+                    }
+                });
+            }
+        });
+    }
+
+    public void BackGroundAlpha(float f) {
+        WindowManager.LayoutParams layoutParams = activity.getWindow().getAttributes();
+        layoutParams.alpha = f;
+        activity.getWindow().setAttributes(layoutParams);
+    }
+
+    private void initRootButton() {
+        llRoot.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String rootPath= BasicParams.BasicPath;
+                getFileList(rootPath);
+                RelativePaths.clear();
+                fileListAdapter.updateFileList(currentFileList);
+                if (onSelect)fileListAdapter.clearSelections();
+                navigationAdapter.UpdatePathList(RelativePaths);
+            }
+        });
+    }
+
+    private void setPathView(String initPath) {
+        RelativePaths= FileUtil.getRelativePaths(initPath);
+        navigation_view.setLayoutManager(new LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false));
+        navigationAdapter=new NavigationAdapter(this,RelativePaths);
+        navigationAdapter.setRecycleItemClickListener(new NavigationAdapter.OnRecycleItemClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onClick(View view, int position) {
+                List<String>sublist=RelativePaths.subList(0,position+1);
+                RelativePaths= new ArrayList<>(sublist);
+                getFileList(FileUtil.mergeAbsolutePath(RelativePaths));
+                fileListAdapter.updateFileList(currentFileList);
+                if (onSelect)fileListAdapter.clearSelections();
+                navigationAdapter.UpdatePathList(RelativePaths);
+            }
+        });
+        navigation_view.setAdapter(navigationAdapter);
+    }
+
+    private void setFileList() {
+        fileListAdapter =new FileListAdapter(currentFileList,this);
+        lvFileList.setAdapter(fileListAdapter);
+        lvFileList.setOnItemClickListener(onItemClickListener);
+        lvFileList.setOnItemLongClickListener(itemLongClickListener);
     }
 
     private void initBottomView() {
@@ -110,8 +218,8 @@ public class FileSelectorActivity extends AppCompatActivity {
         select_cancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                adapter.clearSelections();
-                adapter.setSelect(false);
+                fileListAdapter.clearSelections();
+                fileListAdapter.setSelect(false);
                 BottomViewShow(View.INVISIBLE,0);
                 onSelect=false;
                 SelectNum=0;
@@ -129,7 +237,7 @@ public class FileSelectorActivity extends AppCompatActivity {
                 if (!onSelect && currentFileList.get(position).getFileType() != FileInfo.FileType.Parent) {
                     tv_select_num.setVisibility(View.VISIBLE);
                     BottomViewShow(View.VISIBLE, 140);
-                    adapter.setSelect(true);
+                    fileListAdapter.setSelect(true);
                     onSelect=true;
                 }
                 return true;
@@ -196,7 +304,7 @@ public class FileSelectorActivity extends AppCompatActivity {
                         if (SelectNum < BasicParams.getInstance().getMaxSelectNum() || viewHolder.ckSelector.isChecked()) {
                             viewHolder.ckSelector.toggle();
                             if (file_select.getFileType() != FileInfo.FileType.Parent) {
-                                adapter.ModifyFileSelected(position, viewHolder.ckSelector.isChecked());
+                                fileListAdapter.ModifyFileSelected(position, viewHolder.ckSelector.isChecked());
                                 if (viewHolder.ckSelector.isChecked()) {
                                     FileSelected.add(file_select.getFilePath());
                                 } else {
@@ -210,10 +318,14 @@ public class FileSelectorActivity extends AppCompatActivity {
                 }else {
                     if (file_select.getFileType() == FileInfo.FileType.Folder ||
                             file_select.getFileType() == FileInfo.FileType.Parent) {
+                        currentPath=file_select.getFilePath();
                         getFileList(file_select.getFilePath());
-                        adapter.updateFileList(currentFileList);
+                        fileListAdapter.updateFileList(currentFileList);
+                        RelativePaths=FileUtil.getRelativePaths(file_select.getFilePath());
+                        navigationAdapter.UpdatePathList(RelativePaths);
+                        navigation_view.scrollToPosition(navigationAdapter.getItemCount()-1);
                         if (onSelect){
-                            adapter.clearSelections();
+                            fileListAdapter.clearSelections();
                         }
                     }
                 }
@@ -308,7 +420,11 @@ public class FileSelectorActivity extends AppCompatActivity {
             //resume tasks needing this permission
             Log.i("permission", "granted");
             //TODO: 再次加载文件目录
-            getFileList(BasicParams.getInstance().getRootPath());
+            String initPath= BasicParams.getInstance().getRootPath();
+            File[] test=(new File(initPath)).listFiles();
+            if (test!=null)getFileList(initPath);
+            setFileList();
+            setPathView(initPath);
         }
     }
 
