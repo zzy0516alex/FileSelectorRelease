@@ -91,6 +91,25 @@ FileSelectorSettings settings=new FileSelectorSettings();
                         .show(MainActivity.this);//显示
 ```
 
+获取返回的数据
+```java
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode==FileSelectorSettings.REQUEST_CODE && resultCode==FileSelectorSettings.BACK_WITH_SELECTIONS){
+            assert data != null;
+            Bundle bundle=data.getExtras();
+            assert bundle != null;
+            ArrayList<String> FilePathSelected
+                    =bundle.getStringArrayList(FileSelectorSettings.FILE_PATH_LIST_REQUEST);
+            for (String file_path :
+                    FilePathSelected) {
+                Log.v("file_sel", file_path);
+            }
+        }
+    }
+```
+
 # 类与方法
 FileSelectorSettings
 | 方法 | 注释 | 错误 |
