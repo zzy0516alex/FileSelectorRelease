@@ -1,6 +1,7 @@
 package com.z.fileselectorlib.adapter;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,11 +12,15 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.z.fileselectorlib.Objects.BasicParams;
 import com.z.fileselectorlib.Objects.FileInfo;
 import com.z.fileselectorlib.R;
+import com.z.fileselectorlib.Utils.FileUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Objects;
 
 public class FileListAdapter extends BaseAdapter {
@@ -109,7 +114,19 @@ public class FileListAdapter extends BaseAdapter {
     }
 
     private void setIcon(int position, ViewHolder viewHolder) {
-        switch(FileList.get(position).getFileType()){
+        FileInfo currentFile = FileList.get(position);
+        if (BasicParams.getInstance().getCustomIcon().size()>0){
+            Map<String, Bitmap> customIcons = BasicParams.getInstance().getCustomIcon();
+            Iterator<Map.Entry<String, Bitmap>> entries = customIcons.entrySet().iterator();
+            while (entries.hasNext()) {
+                Map.Entry<String, Bitmap> entry = entries.next();
+                if (FileUtil.fileFilter(currentFile.getFilePath(),entry.getKey())){
+                    viewHolder.ivFileIcon.setImageBitmap(entry.getValue());
+                    return;
+                }
+            }
+        }
+        switch(currentFile.getFileType()){
             case Folder:{
                 viewHolder.ivFileIcon.setImageResource(R.mipmap.file_folder);
             }
@@ -130,6 +147,10 @@ public class FileListAdapter extends BaseAdapter {
             break;
             case Video:{
                 viewHolder.ivFileIcon.setImageResource(R.mipmap.file_video);
+            }
+            break;
+            case Text:{
+                viewHolder.ivFileIcon.setImageResource(R.mipmap.file_text);
             }
             break;
             case Unknown:{

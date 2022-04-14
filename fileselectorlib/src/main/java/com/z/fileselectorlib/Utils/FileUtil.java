@@ -61,6 +61,17 @@ public class FileUtil {
     private static final int FIRST_PLAYLIST_FILE_TYPE = FILE_TYPE_M3U;
     private static final int LAST_PLAYLIST_FILE_TYPE = FILE_TYPE_WPL;
 
+    //TEXT
+    public static final int FILE_TYPE_TXT     = 51;
+    public static final int FILE_TYPE_DOC     = 52;
+    public static final int FILE_TYPE_RTF     = 53;
+    public static final int FILE_TYPE_LOG     = 54;
+    public static final int FILE_TYPE_CONF    = 55;
+    public static final int FILE_TYPE_SH      = 56;
+    public static final int FILE_TYPE_XML     = 57;
+    private static final int FIRST_TEXT_FILE_TYPE = FILE_TYPE_TXT;
+    private static final int LAST_TEXT_FILE_TYPE = FILE_TYPE_XML;
+
     //静态内部类
     static class MediaFileType {
 
@@ -115,6 +126,14 @@ public class FileUtil {
         addFileType("PLS", FILE_TYPE_PLS, "audio/x-scpls");
         addFileType("WPL", FILE_TYPE_WPL, "application/vnd.ms-wpl");
 
+        addFileType("TXT", FILE_TYPE_TXT , "text/plain");
+        addFileType("DOC", FILE_TYPE_DOC , "application/msword");
+        addFileType("RTF", FILE_TYPE_RTF , "application/rtf");
+        addFileType("LOG", FILE_TYPE_LOG , "text/plain");
+        addFileType("CONF", FILE_TYPE_CONF, "text/plain");
+        addFileType("SH", FILE_TYPE_SH  , "text/plain");
+        addFileType("XML", FILE_TYPE_XML , "text/plain");
+
         // compute file extensions list for native Media Scanner
         StringBuilder builder = new StringBuilder();
 
@@ -151,6 +170,11 @@ public class FileUtil {
                 fileType <= LAST_PLAYLIST_FILE_TYPE);
     }
 
+    public static boolean isTextFileType(int fileType){
+        return (fileType >= FIRST_TEXT_FILE_TYPE &&
+                fileType <= LAST_TEXT_FILE_TYPE);
+    }
+
     public static MediaFileType getFileType(String path) {
         int lastDot = path.lastIndexOf(".");
         if (lastDot < 0)
@@ -176,12 +200,6 @@ public class FileUtil {
         return false;
     }
 
-    //根据mime类型查看文件类型
-    public static int getFileTypeForMimeType(String mimeType) {
-        Integer value = sMimeTypeMap.get(mimeType);
-        return (value == null ? 0 : value);
-    }
-
     //根据图片文件路径判断文件类型
     public static boolean isImageFileType(String path) {
         MediaFileType type = getFileType(path);
@@ -191,9 +209,25 @@ public class FileUtil {
         return false;
     }
 
+    //根据文本文件路径判断文件类型
+    public static boolean isTextFileType(String path) {
+        MediaFileType type = getFileType(path);
+        if(null != type) {
+            return isTextFileType(type.fileType);
+        }
+        return false;
+    }
+
+    //根据mime类型查看文件类型
+    public static int getFileTypeForMimeType(String mimeType) {
+        Integer value = sMimeTypeMap.get(mimeType);
+        return (value == null ? 0 : value);
+    }
+
     public static int getSubfolderNum(String path) {
         int i=0;
         File[] files = new File(path).listFiles();
+        if (files == null)return -1;
         for (File f : files) {
             if (f.getName().indexOf(".") != 0){
                 i++;
@@ -255,6 +289,15 @@ public class FileUtil {
             }
         }
         return paths;
+    }
+
+    public static boolean fileFilter(String path,String...extensions){
+        path = path.toUpperCase();
+        for (String extension : extensions) {
+            String ext = extension.toUpperCase();
+            if (path.endsWith(ext))return true;
+        }
+        return false;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)

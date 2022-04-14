@@ -21,6 +21,7 @@ import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -113,6 +114,17 @@ public class FileSelectorActivity extends AppCompatActivity {
 
         }
 
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (onSelect){
+            quitSelectMod();
+        }
+        else if (!currentPath.equals(BasicParams.BasicPath)){
+            refreshFileList(new File(currentPath).getParent());
+        }
+        else super.onBackPressed();
     }
 
     private void initMoreOptionsView() {
@@ -218,16 +230,20 @@ public class FileSelectorActivity extends AppCompatActivity {
         select_cancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                fileListAdapter.clearSelections();
-                fileListAdapter.setSelect(false);
-                BottomViewShow(View.INVISIBLE,0);
-                onSelect=false;
-                SelectNum=0;
-                FileSelected.clear();
-                changeSelectNum(0);
-                tv_select_num.setVisibility(View.INVISIBLE);
+                quitSelectMod();
             }
         });
+    }
+
+    private void quitSelectMod() {
+        fileListAdapter.clearSelections();
+        fileListAdapter.setSelect(false);
+        BottomViewShow(View.INVISIBLE,0);
+        onSelect=false;
+        SelectNum=0;
+        FileSelected.clear();
+        changeSelectNum(0);
+        tv_select_num.setVisibility(View.INVISIBLE);
     }
 
     private void setOnItemLongClick() {
@@ -300,7 +316,7 @@ public class FileSelectorActivity extends AppCompatActivity {
                 FileInfo file_select=currentFileList.get(position);
                 if (onSelect && file_select.getFileType() != FileInfo.FileType.Parent){
                     FileListAdapter.ViewHolder viewHolder = (FileListAdapter.ViewHolder) view.getTag();
-                    if (file_select.FileFilter(BasicParams.getInstance().getFileTypes())) {
+                    if (file_select.FileFilter(BasicParams.getInstance().getSelectableFileTypes())) {
                         if (SelectNum < BasicParams.getInstance().getMaxSelectNum() || viewHolder.ckSelector.isChecked()) {
                             viewHolder.ckSelector.toggle();
                             if (file_select.getFileType() != FileInfo.FileType.Parent) {
@@ -314,23 +330,27 @@ public class FileSelectorActivity extends AppCompatActivity {
                                 changeSelectNum(SelectNum);
                             }
                         }
-                    }
+                    }else Toast.makeText(activity, "该文件类型不可选", Toast.LENGTH_SHORT).show();
                 }else {
                     if (file_select.getFileType() == FileInfo.FileType.Folder ||
                             file_select.getFileType() == FileInfo.FileType.Parent) {
-                        currentPath=file_select.getFilePath();
-                        getFileList(file_select.getFilePath());
-                        fileListAdapter.updateFileList(currentFileList);
-                        RelativePaths=FileUtil.getRelativePaths(file_select.getFilePath());
-                        navigationAdapter.UpdatePathList(RelativePaths);
-                        navigation_view.scrollToPosition(navigationAdapter.getItemCount()-1);
-                        if (onSelect){
-                            fileListAdapter.clearSelections();
-                        }
+                        refreshFileList(file_select.getFilePath());
                     }
                 }
             }
         };
+    }
+
+    private void refreshFileList(String path) {
+        currentPath= path;
+        getFileList(path);
+        fileListAdapter.updateFileList(currentFileList);
+        RelativePaths=FileUtil.getRelativePaths(path);
+        navigationAdapter.UpdatePathList(RelativePaths);
+        navigation_view.scrollToPosition(navigationAdapter.getItemCount()-1);
+        if (onSelect){
+            fileListAdapter.clearSelections();
+        }
     }
 
 
@@ -347,7 +367,10 @@ public class FileSelectorActivity extends AppCompatActivity {
             currentFileList.add(fileInfo);
         }
         File[] files = initFile.listFiles();
-        assert files != null;
+        if (files == null){
+            Log.d("myfile", "can not list file");
+            return;
+        }
         List<File> file_list= Arrays.asList(files);
         FileUtil.SortFilesByName(file_list);
         for (File f : file_list) {
@@ -364,6 +387,10 @@ public class FileSelectorActivity extends AppCompatActivity {
                     Log.d("myfile", fileInfo.getFileName() + ":" + fileInfo.getFileCount());
                     currentFileList.add(fileInfo);
                 } else {
+                    if (BasicParams.getInstance().isUseFilter()) {
+                        if (!FileUtil.fileFilter(f.getPath(),BasicParams.getInstance().getFileTypeFilter()))
+                            continue;
+                    }
                     if (FileUtil.isAudioFileType(f.getPath())) {
                         FileInfo fileInfo = new FileInfo();
                         fileInfo.setFileName(f.getName());
@@ -390,6 +417,16 @@ public class FileSelectorActivity extends AppCompatActivity {
                         fileInfo.setFileLastUpdateTime(TimeUtil.getDateInString(new Date(f.lastModified())));
                         fileInfo.setFilePath(f.getPath());
                         fileInfo.setFileType(FileInfo.FileType.Video);
+                        fileInfo.setFileCount(f.length());
+                        Log.d("myfile", fileInfo.getFileName() + ":" + fileInfo.getFileCount());
+                        currentFileList.add(fileInfo);
+                    }
+                    else if (FileUtil.isTextFileType(f.getPath())){
+                        FileInfo fileInfo = new FileInfo();
+                        fileInfo.setFileName(f.getName());
+                        fileInfo.setFileLastUpdateTime(TimeUtil.getDateInString(new Date(f.lastModified())));
+                        fileInfo.setFilePath(f.getPath());
+                        fileInfo.setFileType(FileInfo.FileType.Text);
                         fileInfo.setFileCount(f.length());
                         Log.d("myfile", fileInfo.getFileName() + ":" + fileInfo.getFileCount());
                         currentFileList.add(fileInfo);

@@ -3,7 +3,7 @@ package com.z.fileselectorlib.Objects;
 import com.z.fileselectorlib.Utils.FileUtil;
 
 public class FileInfo {
-    public enum FileType{Folder,Video,Audio,Image,Unknown,Parent}
+    public enum FileType{Folder,Video,Audio,Image,Text,Unknown,Parent}
     private String FileName;
     private long FileCount;//如果是文件夹则表示子目录项数,如果不是文件夹则表示文件大小，-1不显示
     private String FileLastUpdateTime;
@@ -21,6 +21,8 @@ public class FileInfo {
     public String getFileCount() {
         if (fileType== FileType.Parent)
             return "";
+        else if (FileCount == -1 && fileType== FileType.Folder)
+            return "文件夹不可访问";
         else if (fileType== FileType.Folder)
             return "共"+ FileCount +"项";
         else {

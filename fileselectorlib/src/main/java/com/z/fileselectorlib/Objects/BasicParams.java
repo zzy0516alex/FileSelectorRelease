@@ -1,15 +1,18 @@
 package com.z.fileselectorlib.Objects;
 
-import android.app.Activity;
-import android.os.Environment;
-
-import java.util.ArrayList;
-
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Audio;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Folder;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Image;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Unknown;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Video;
+
+import android.app.Activity;
+import android.graphics.Bitmap;
+import android.os.Environment;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class BasicParams {
     public static final String BasicPath=Environment.getExternalStorageDirectory().getAbsolutePath();
@@ -17,10 +20,13 @@ public class BasicParams {
     private int MaxSelectNum;
     private String tips;
     private String color;
-    private FileInfo.FileType[] fileTypes;
+    private FileInfo.FileType[] selectableFileTypes;
     private boolean needMoreOptions;
     private String[] OptionsName;
     private OnOptionClick[] onOptionClicks;
+    private String[] fileTypeFilter;
+    private boolean useFilter;
+    private Map<String, Bitmap> customIcon = new HashMap<>();
 
 
     public String getRootPath() {
@@ -55,12 +61,12 @@ public class BasicParams {
         this.color = color;
     }
 
-    public void setFileTypes(FileInfo.FileType... fileTypes) {
-        this.fileTypes = fileTypes;
+    public void setSelectableFileTypes(FileInfo.FileType... selectableFileTypes) {
+        this.selectableFileTypes = selectableFileTypes;
     }
 
-    public FileInfo.FileType[] getFileTypes() {
-        return fileTypes;
+    public FileInfo.FileType[] getSelectableFileTypes() {
+        return selectableFileTypes;
     }
 
     public boolean isNeedMoreOptions() {
@@ -87,6 +93,34 @@ public class BasicParams {
         this.onOptionClicks = onOptionClicks;
     }
 
+    public static String getBasicPath() {
+        return BasicPath;
+    }
+
+    public String[] getFileTypeFilter() {
+        return fileTypeFilter;
+    }
+
+    public void setFileTypeFilter(String[] fileTypeFilter) {
+        this.fileTypeFilter = fileTypeFilter;
+    }
+
+    public boolean isUseFilter() {
+        return useFilter;
+    }
+
+    public void setUseFilter(boolean useFilter) {
+        this.useFilter = useFilter;
+    }
+
+    public Map<String, Bitmap> getCustomIcon() {
+        return customIcon;
+    }
+
+    public void addCustomIcon(String extension,Bitmap icon) {
+        customIcon.put(extension,icon);
+    }
+
     public static BasicParams getInstance() {
         return InstanceHolder.INSTANCE;
     }
@@ -97,8 +131,9 @@ public class BasicParams {
         params.setMaxSelectNum(1);
         params.setTips("请选择文件");
         params.setColor("#1E90FF");
-        params.setFileTypes(Folder,Video,Audio,Image,Unknown);
+        params.setSelectableFileTypes(Folder,Video,Audio,Image,Unknown);
         params.setNeedMoreOptions(false);
+        params.setUseFilter(false);
         return params;
     }
 
