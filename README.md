@@ -91,6 +91,19 @@ FileSelectorSettings settings=new FileSelectorSettings();
                         .show(MainActivity.this);//显示
 ```
 
+自定义文件显示和图标
+```java
+FileSelectorSettings settings=new FileSelectorSettings();
+            settings.setRootPath(FileSelectorSettings.getSystemRootPath())
+                    .setMaxFileSelect(2)
+                    .setTitle("请选择文件夹")
+                    .setThemeColor("#3700B3")
+                    .setFileTypesToSelect(FileInfo.FileType.Unknown)//选择自定义后缀的文件此处参数需为Unknown
+                    .setFileTypesToShow(".cer")//自定义可见的文件后缀
+                    .setCustomizedIcons(new String[]{".cer"},context,R.mipmap.file_cert)//自定义文件图标
+                    .show(MainActivity.this);
+```
+
 获取返回的数据
 ```java
     @Override
@@ -119,7 +132,9 @@ FileSelectorSettings
 | FileSelectorSettings setTitle(String title) | 设置标题 |无|
 | FileSelectorSettings setThemeColor(String color) | 设置主题颜色(包含标题栏和状态栏) |无|
 | FileSelectorSettings setFileTypesToSelect(FileInfo.FileType ... fileTypes)| 设置可选择的文件类型|"文件类型不能包含parent"|
-| FileSelectorSettings setMoreOPtions(String[] optionsName, BasicParams.OnOptionClick...onOptionClicks) | 设置更多选项，第一个参数为选项名，第二个参数为选项点击事件 |“选项名和点击响应数量必须对应"|
+| FileSelectorSettings setFileTypesToShow(String ... extensions)| 设置可见的文件类型|后缀示例".txt",不填写则全部显示|
+| FileSelectorSettings setCustomizedIcons(String[] extensions, Context context, int ... icon_ids)| 设置自定义文件图标|后缀名和图标资源id应一一对应|
+| FileSelectorSettings setMoreOPtions(String[] optionsName, BasicParams.OnOptionClick...onOptionClicks) | 设置更多选项，第一个参数为选项名，第二个参数为选项点击事件 |选项名和点击响应数量必须对应|
 | static String getSystemRootPath() | 获取系统外部存储根目录：/storage/emulated/0 |无|
 
 FileInfo.FileType
@@ -129,6 +144,7 @@ FileInfo.FileType
 | Video | 视频文件 |
 | Image| 图片文件 |
 | Audio | 音频文件 |
+| Text | 文本文件 |
 | Unknown | 除上述类型以外的其他文件类型 |
 | Parent | 不可用的变量 |
 
