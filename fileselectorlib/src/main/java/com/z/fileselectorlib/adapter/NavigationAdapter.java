@@ -9,6 +9,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.z.fileselectorlib.FileSelectorTheme;
+import com.z.fileselectorlib.Objects.BasicParams;
 import com.z.fileselectorlib.R;
 
 import java.util.ArrayList;
@@ -16,10 +18,17 @@ import java.util.ArrayList;
 public class NavigationAdapter extends RecyclerView.Adapter {
     private Context context;
     private ArrayList<String>RelativePathList;
+    private int naviBarTextColor;
+    private int naviBarTextSize;
+    private int naviBarArrowIcon;
 
     public NavigationAdapter(Context context, ArrayList<String> relativePathList) {
         this.context = context;
         RelativePathList = relativePathList;
+        FileSelectorTheme theme = BasicParams.getInstance().getTheme();
+        this.naviBarTextColor = theme.getNaviBarTextColor();
+        this.naviBarTextSize = theme.getNaviBarTextSize();
+        this.naviBarArrowIcon = theme.getNaviBarArrowIcon();
     }
     public void UpdatePathList(ArrayList<String>relativePathList){
         RelativePathList=relativePathList;
@@ -37,9 +46,12 @@ public class NavigationAdapter extends RecyclerView.Adapter {
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         ViewHolder viewHolder= (ViewHolder) holder;
         viewHolder.path.setText(RelativePathList.get(position));
+        viewHolder.path.setTextColor(naviBarTextColor);
+        viewHolder.path.setTextSize(naviBarTextSize);
         viewHolder.setPosition(position);
         if (position==(getItemCount()-1))viewHolder.next.setVisibility(View.INVISIBLE);
         else viewHolder.next.setVisibility(View.VISIBLE);
+        viewHolder.next.setImageResource(naviBarArrowIcon);
     }
 
     @Override
@@ -58,12 +70,7 @@ public class NavigationAdapter extends RecyclerView.Adapter {
             super(itemView);
             path = itemView.findViewById(R.id.navi_path);
             next=itemView.findViewById(R.id.next);
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    recycleItemClickListener.onClick(itemView,position);
-                }
-            });
+            itemView.setOnClickListener(v -> recycleItemClickListener.onClick(itemView,position));
 
         }
 
@@ -76,6 +83,6 @@ public class NavigationAdapter extends RecyclerView.Adapter {
     }
 
     public interface OnRecycleItemClickListener {
-        void onClick(View view, int position);
+        void onClick(View view,int position);
     }
 }

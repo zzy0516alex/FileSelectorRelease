@@ -41,10 +41,16 @@ public class FileSelectorSettings {
         return this;
     }
 
-    public FileSelectorSettings setThemeColor(String color){
-        basicParams.setColor(color);
+//    public FileSelectorSettings setThemeColor(String color){
+//        basicParams.setColor(color);
+//        return this;
+//    }
+
+    public FileSelectorSettings setTheme(FileSelectorTheme theme){
+        basicParams.setTheme(theme);
         return this;
     }
+
     public FileSelectorSettings setFileTypesToSelect(FileInfo.FileType ... fileTypes){
         if (Arrays.asList(fileTypes).contains(FileInfo.FileType.Parent)){
             throw new IllegalArgumentException("类型不能包含parent");
@@ -110,7 +116,7 @@ public class FileSelectorSettings {
         if (test==null){
             throw new IllegalArgumentException("初始路径不是一个目录");
         }
-        Intent intent=new Intent(activity, FileSelectorActivity.class);
+        Intent intent=new Intent(activity,FileSelectorActivity.class);
         activity.startActivityForResult(intent, FILELIST_REQUEST_CODE);
     }
 }

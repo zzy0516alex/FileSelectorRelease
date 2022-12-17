@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.z.fileselectorlib.FileSelectorTheme;
 import com.z.fileselectorlib.Objects.BasicParams;
 import com.z.fileselectorlib.Objects.FileInfo;
 import com.z.fileselectorlib.R;
@@ -31,11 +32,21 @@ public class FileListAdapter extends BaseAdapter {
     private LayoutInflater inflater;
     private boolean isSelect=false;
 
+    private int fileNameColor;
+    private int fileNameSize;
+    private int fileInfoColor;
+    private int fileInfoSize;
+
     public FileListAdapter(ArrayList<FileInfo> fileList, Context mContext) {
         FileList = fileList;
         this.mContext = mContext;
         inflater=LayoutInflater.from(mContext);
         clearSelections();
+        FileSelectorTheme theme = BasicParams.getInstance().getTheme();
+        fileNameColor = theme.getFileNameColor();
+        fileNameSize = theme.getFileNameSize();
+        fileInfoColor = theme.getFileInfoColor();
+        fileInfoSize = theme.getFileInfoSize();
     }
 
     public void clearSelections() {
@@ -92,8 +103,15 @@ public class FileListAdapter extends BaseAdapter {
         }
 
         viewHolder.tvFileName.setText(FileList.get(position).getFileName());
+        viewHolder.tvFileName.setTextColor(fileNameColor);
+        viewHolder.tvFileName.setTextSize(fileNameSize);
         viewHolder.tvFileCount.setText(FileList.get(position).getFileCount());
+        viewHolder.tvFileCount.setTextColor(fileInfoColor);
+        viewHolder.tvFileCount.setTextSize(fileInfoSize);
         viewHolder.tvFileDate.setText(FileList.get(position).getFileLastUpdateTime());
+        viewHolder.tvFileDate.setTextColor(fileInfoColor);
+        viewHolder.tvFileDate.setTextSize(fileInfoSize);
+
         setIcon(position, viewHolder);
         if (FileList.get(position).getFileType()== FileInfo.FileType.Parent){
             ViewShow(viewHolder.llInfo,View.INVISIBLE,0);
@@ -132,9 +150,7 @@ public class FileListAdapter extends BaseAdapter {
             }
                 break;
             case Parent:{
-                viewHolder.ivFileIcon.setImageResource(R.mipmap.back_to_parent);
-//                viewHolder.llInfo.setVisibility(View.INVISIBLE);
-//                viewHolder.tvFileName.setPadding(20,50,0,-10);
+                viewHolder.ivFileIcon.setImageResource(R.mipmap.fs_back_to_parent);
             }
                 break;
             case Image:{

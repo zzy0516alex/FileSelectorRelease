@@ -22,14 +22,18 @@
             android:text="我的文档"
             android:textSize="18sp"
             android:layout_marginTop="8dp"
-            android:textColor="@color/black"/>
+            android:layout_marginHorizontal="3dp"
+            android:textColor="@color/black"
+            android:lines="1"
+            android:ellipsize="middle"/>
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/FileInfo"
             android:orientation="horizontal"
             android:layout_marginTop="4dp"
-            android:layout_marginBottom="10dp">
+            android:layout_marginBottom="10dp"
+            android:layout_marginHorizontal="3dp">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

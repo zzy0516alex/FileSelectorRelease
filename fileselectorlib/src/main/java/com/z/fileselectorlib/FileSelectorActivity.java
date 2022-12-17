@@ -1,9 +1,9 @@
 package com.z.fileselectorlib;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -26,6 +26,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -69,6 +70,7 @@ public class FileSelectorActivity extends AppCompatActivity {
     private AdapterView.OnItemLongClickListener itemLongClickListener;
     private FileListAdapter fileListAdapter;
     private Activity activity;
+    private Context context;
     private boolean onSelect=false;
     private int SelectNum=0;
 
@@ -90,6 +92,7 @@ public class FileSelectorActivity extends AppCompatActivity {
         llRoot=findViewById(R.id.root);
         imMore=findViewById(R.id.more);
         activity=this;
+        context = this;
         setOnItemClick();
         setOnItemLongClick();
 
@@ -110,7 +113,7 @@ public class FileSelectorActivity extends AppCompatActivity {
             File[] test=(new File(initPath)).listFiles();
             if (test!=null)getFileList(initPath);
             setFileList();
-            setPathView(initPath);
+            setNavigationBar(initPath);
 
         }
 
@@ -130,41 +133,31 @@ public class FileSelectorActivity extends AppCompatActivity {
     private void initMoreOptionsView() {
         if (BasicParams.getInstance().isNeedMoreOptions())imMore.setVisibility(View.VISIBLE);
         else imMore.setVisibility(View.INVISIBLE);
-        imMore.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //加载布局
-                LinearLayout layout = (LinearLayout) LayoutInflater.from(activity).inflate(R.layout.popup_more_options, null);
-                //找到布局的控件
-                ListView listView = (ListView) layout.findViewById(R.id.options);
-                //设置适配器
-                listView.setAdapter(new ArrayAdapter<String>(activity,R.layout.option_list_item,R.id.option_text,BasicParams.getInstance().getOptionsName()));
-                // 实例化popupWindow
-                moreOptions = new PopupWindow(layout, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                //控制键盘是否可以获得焦点
-                moreOptions.setFocusable(true);
-                //设置popupWindow弹出窗体的背景
-                moreOptions.setBackgroundDrawable(getDrawable(R.drawable.popwindow_white));
-                BackGroundAlpha(0.6f);
-                moreOptions.showAsDropDown(imMore,-imMore.getWidth()+50,-imMore.getHeight()+30);
-                moreOptions.setOnDismissListener(new PopupWindow.OnDismissListener() {
-                    @Override
-                    public void onDismiss() {
-                        BackGroundAlpha(1.0f);
-                    }
-                });
-                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        moreOptions.dismiss();
-                        BasicParams.getInstance().getOnOptionClicks()[position].onclick(activity,position,currentPath,FileSelected);
-                        //刷新列表
-                        getFileList(currentPath);
-                        fileListAdapter.updateFileList(currentFileList);
-                        if (onSelect)fileListAdapter.clearSelections();
-                    }
-                });
-            }
+        imMore.setOnClickListener(v -> {
+            //加载布局
+            LinearLayout layout = (LinearLayout) LayoutInflater.from(activity).inflate(R.layout.popup_more_options, null);
+            layout.measure(0,0);
+            //找到布局的控件
+            ListView listView = layout.findViewById(R.id.options);
+            //设置适配器
+            listView.setAdapter(new ArrayAdapter<>(activity, R.layout.option_list_item, R.id.option_text, BasicParams.getInstance().getOptionsName()));
+            // 实例化popupWindow
+            moreOptions = new PopupWindow(layout, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            //控制键盘是否可以获得焦点
+            moreOptions.setFocusable(true);
+            //设置popupWindow弹出窗体的背景
+            moreOptions.setBackgroundDrawable(ContextCompat.getDrawable(context,R.drawable.popwindow_white));
+            BackGroundAlpha(0.6f);
+            moreOptions.showAsDropDown(imMore,-layout.getMeasuredWidth() + imMore.getWidth(),-imMore.getHeight()+30);
+            moreOptions.setOnDismissListener(() -> BackGroundAlpha(1.0f));
+            listView.setOnItemClickListener((parent, view, position, id) -> {
+                moreOptions.dismiss();
+                BasicParams.getInstance().getOnOptionClicks()[position].onclick(activity,position,currentPath,FileSelected);
+                //刷新列表
+                getFileList(currentPath);
+                fileListAdapter.updateFileList(currentFileList);
+                if (onSelect)fileListAdapter.clearSelections();
+            });
         });
     }
 
@@ -175,6 +168,16 @@ public class FileSelectorActivity extends AppCompatActivity {
     }
 
     private void initRootButton() {
+        FileSelectorTheme theme = BasicParams.getInstance().getTheme();
+        int naviBarTextColor = theme.getNaviBarTextColor();
+        int naviBarTextSize = theme.getNaviBarTextSize();
+        int naviBarArrowIcon = theme.getNaviBarArrowIcon();
+        TextView tv_root_name = findViewById(R.id.root_name);
+        ImageView im_path_segment = findViewById(R.id.path_segment);
+        tv_root_name.setTextColor(naviBarTextColor);
+        tv_root_name.setTextSize(naviBarTextSize);
+        im_path_segment.setImageResource(naviBarArrowIcon);
+
         llRoot.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -188,7 +191,7 @@ public class FileSelectorActivity extends AppCompatActivity {
         });
     }
 
-    private void setPathView(String initPath) {
+    private void setNavigationBar(String initPath) {
         RelativePaths= FileUtil.getRelativePaths(initPath);
         navigation_view.setLayoutManager(new LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false));
         navigationAdapter=new NavigationAdapter(this,RelativePaths);
@@ -279,18 +282,31 @@ public class FileSelectorActivity extends AppCompatActivity {
     }
 
     private void initTopView() {
-        int theme_color= Color.parseColor(BasicParams.getInstance().getColor());
+        //theme
+        FileSelectorTheme theme = BasicParams.getInstance().getTheme();
+        int theme_color= theme.getThemeColor();
+        int back_icon_id= theme.getTopToolBarBackIcon();
+        int title_color = theme.getTopToolBarTitleColor();
+        int title_size = theme.getTopToolBarTitleSize();
+        int menu_icon_id = theme.getTopToolBarMenuIcon();
+
         llTopView.setBackgroundColor(theme_color);
+        ImageView back_arrow = findViewById(R.id.back);
+        back_arrow.setImageResource(back_icon_id);
+        tvTips.setTextColor(title_color);
+        tvTips.setTextSize(title_size);
+        tv_select_num.setTextColor(title_color);
+        tv_select_num.setTextSize(title_size);
+        imMore.setImageResource(menu_icon_id);
+
         window= this.getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN); //显示状态栏
         window.setStatusBarColor(theme_color);
         if (ColorUtils.calculateLuminance(theme_color)>0.5) {
             StatusBarUtil.setStatusBarDarkTheme(this, true);
-            tvTips.setTextColor(getColor(R.color.text_color_dark));
         }
         else {
             StatusBarUtil.setStatusBarDarkTheme(this, false);
-            tvTips.setTextColor(getColor(R.color.text_color_light));
         }
     }
 
@@ -461,7 +477,7 @@ public class FileSelectorActivity extends AppCompatActivity {
             File[] test=(new File(initPath)).listFiles();
             if (test!=null)getFileList(initPath);
             setFileList();
-            setPathView(initPath);
+            setNavigationBar(initPath);
         }
     }
 

@@ -3,83 +3,92 @@
     android:layout_width="match_parent" android:layout_height="match_parent">
 
     <RelativeLayout
+        android:id="@+id/top_view"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:id="@+id/top_view"
         android:background="@color/theme_color">
+
         <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:id="@+id/back"
-            android:src="@mipmap/backarrow"
-            android:layout_centerVertical="true"
-            android:layout_marginStart="15dp"/>
-        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="15dp"
+            android:src="@mipmap/fs_back_arrow" />
+
+        <TextView
             android:id="@+id/tips"
-            android:text="@string/tips"
-            android:textSize="22sp"
-            android:textColor="@color/text_color_light"
-            android:layout_centerVertical="true"
-            android:layout_marginStart="15dp"
-            android:layout_toEndOf="@+id/back"/>
-        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/select_num"
-            android:text="@string/selectNum"
-            android:textSize="20sp"
             android:layout_centerVertical="true"
             android:layout_marginStart="15dp"
+            android:layout_toEndOf="@+id/back"
+            android:text="@string/tips"
             android:textColor="@color/text_color_light"
-            android:layout_toEndOf="@id/tips"/>
-        <ImageView
-            android:layout_width="10dp"
+            android:textSize="22sp" />
+
+        <TextView
+            android:id="@+id/select_num"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/more"
-            android:src="@mipmap/more"
             android:layout_centerVertical="true"
-            android:layout_toEndOf="@id/select_num"
+            android:layout_marginStart="15dp"
+            android:layout_toEndOf="@id/tips"
+            android:text="@string/selectNum"
+            android:textColor="@color/text_color_light"
+            android:textSize="20sp" />
+
+        <ImageView
+            android:id="@+id/more"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
-            android:layout_marginEnd="5dp"
-            android:paddingEnd="-20dp"
-            android:paddingStart="0dp"/>
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="10dp"
+            android:src="@mipmap/fs_menu" />
 
 
     </RelativeLayout>
+
     <LinearLayout
+        android:id="@+id/top_view2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/top_view2"
         android:layout_below="@+id/top_view"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingVertical="5dp">
+
         <LinearLayout
+            android:id="@+id/root"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/root"
-            android:orientation="horizontal"
+            android:layout_gravity="center_vertical"
             android:layout_marginStart="10dp"
-            android:layout_marginEnd="3dp"
             android:layout_marginTop="3dp"
-            android:layout_gravity="center_vertical">
+            android:layout_marginEnd="3dp"
+            android:orientation="horizontal">
+
             <TextView
+                android:id="@+id/root_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="根目录"
                 android:textColor="@color/black"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:layout_gravity="center_vertical"/>
+
             <ImageView
+                android:id="@+id/path_segment"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@mipmap/next"
-                android:layout_marginTop="3dp"
-                android:layout_marginStart="2dp"/>
+                android:layout_marginStart="2dp"
+                android:src="@mipmap/fs_next" />
         </LinearLayout>
+
         <androidx.recyclerview.widget.RecyclerView
-            android:layout_height="wrap_content"
-            android:layout_width="match_parent"
             android:id="@+id/navigation_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="5dp" />
     </LinearLayout>
 

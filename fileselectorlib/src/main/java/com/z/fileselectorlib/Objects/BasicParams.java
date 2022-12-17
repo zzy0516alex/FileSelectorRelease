@@ -3,6 +3,7 @@ package com.z.fileselectorlib.Objects;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Audio;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Folder;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Image;
+import static com.z.fileselectorlib.Objects.FileInfo.FileType.Text;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Unknown;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Video;
 
@@ -13,13 +14,15 @@ import android.os.Environment;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import com.z.fileselectorlib.FileSelectorTheme;
 
 public class BasicParams {
     public static final String BasicPath=Environment.getExternalStorageDirectory().getAbsolutePath();
     private String RootPath;
     private int MaxSelectNum;
     private String tips;
-    private String color;
+    //private String color;
+    private FileSelectorTheme theme;
     private FileInfo.FileType[] selectableFileTypes;
     private boolean needMoreOptions;
     private String[] OptionsName;
@@ -53,12 +56,21 @@ public class BasicParams {
         this.tips = tips;
     }
 
-    public String getColor() {
-        return color;
+//    public String getColor() {
+//        return color;
+//    }
+//
+//    public void setColor(String color) {
+//        this.color = color;
+//    }
+
+
+    public FileSelectorTheme getTheme() {
+        return theme;
     }
 
-    public void setColor(String color) {
-        this.color = color;
+    public void setTheme(FileSelectorTheme theme) {
+        this.theme = theme;
     }
 
     public void setSelectableFileTypes(FileInfo.FileType... selectableFileTypes) {
@@ -130,8 +142,8 @@ public class BasicParams {
         params.setRootPath(BasicPath);
         params.setMaxSelectNum(1);
         params.setTips("请选择文件");
-        params.setColor("#1E90FF");
-        params.setSelectableFileTypes(Folder,Video,Audio,Image,Unknown);
+        params.setTheme(new FileSelectorTheme());
+        params.setSelectableFileTypes(Folder,Video,Audio,Image,Text,Unknown);
         params.setNeedMoreOptions(false);
         params.setUseFilter(false);
         return params;
@@ -142,6 +154,6 @@ public class BasicParams {
     }
 
     public interface OnOptionClick{
-        void onclick(Activity activity, int position, String currentPath, ArrayList<String> FilePathSelected);
+        void onclick(Activity activity,int position,String currentPath,ArrayList<String> FilePathSelected);
     }
 }
