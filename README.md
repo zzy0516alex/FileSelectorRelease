@@ -28,7 +28,7 @@ GitHub地址：[Fileselector
 
  
  # 使用方法
- 
+ ## 基础使用
 gradle:project 中
 ```java
 allprojects {
@@ -42,7 +42,7 @@ allprojects {
 gradle:app 中
 
 ```java
-implementation 'com.github.zzy0516alex:FileSelectorRelease:v4.0'
+implementation 'com.github.zzy0516alex:FileSelectorRelease:v5.3'
 ```
 Manifest中
 
@@ -61,11 +61,10 @@ Manifest中
 在你的Activity中
 
 ```java
-FileSelectorSettings settings=new FileSelectorSettings();
+FileSelectorSettings settings = new FileSelectorSettings();
                 settings.setRootPath(FileSelectorSettings.getSystemRootPath()+"/Android")//起始路径
                         .setMaxFileSelect(2)//最大文件选择数
                         .setTitle("请选择文件夹")//标题
-                        .setThemeColor("#3700B3")//主题颜色
                         .setFileTypesToSelect(FileInfo.FileType.Folder)//可选择文件类型
                         .setMoreOPtions(new String[]{"新建文件夹", "删除文件"},
                                 new BasicParams.OnOptionClick() {
@@ -91,25 +90,12 @@ FileSelectorSettings settings=new FileSelectorSettings();
                         .show(MainActivity.this);//显示
 ```
 
-自定义文件显示和图标
-```java
-FileSelectorSettings settings=new FileSelectorSettings();
-            settings.setRootPath(FileSelectorSettings.getSystemRootPath())
-                    .setMaxFileSelect(2)
-                    .setTitle("请选择文件夹")
-                    .setThemeColor("#3700B3")
-                    .setFileTypesToSelect(FileInfo.FileType.Unknown)//选择自定义后缀的文件此处参数需为Unknown
-                    .setFileTypesToShow(".cer")//自定义可见的文件后缀
-                    .setCustomizedIcons(new String[]{".cer"},context,R.mipmap.file_cert)//自定义文件图标
-                    .show(MainActivity.this);
-```
-
 获取返回的数据
 ```java
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode==FileSelectorSettings.REQUEST_CODE && resultCode==FileSelectorSettings.BACK_WITH_SELECTIONS){
+        if (requestCode == FileSelectorSettings.REQUEST_CODE && resultCode == FileSelectorSettings.BACK_WITH_SELECTIONS){
             assert data != null;
             Bundle bundle=data.getExtras();
             assert bundle != null;
@@ -123,21 +109,73 @@ FileSelectorSettings settings=new FileSelectorSettings();
     }
 ```
 
+## 自定义文件显示和图标
+```java
+FileSelectorSettings settings = new FileSelectorSettings();
+            settings.setRootPath(FileSelectorSettings.getSystemRootPath())
+                    .setMaxFileSelect(2)
+                    .setTitle("请选择文件夹")
+                    .setFileTypesToSelect(FileInfo.FileType.Unknown)//选择自定义后缀的文件此处参数需为Unknown
+                    .setFileTypesToShow(".cer")//自定义可见的文件后缀
+                    .setCustomizedIcons(new String[]{".cer"},context,R.mipmap.file_cert)//自定义文件图标
+                    .show(MainActivity.this);
+```
+
+## 自定义图标及字体
+```java
+FileSelectorTheme theme = new FileSelectorTheme();
+        theme.setTopToolBarTitleColor("#03DAC5")
+                .setThemeColor("#FFFFFF")
+                .setTopToolBarTitleSize(28)
+                .setTopToolBarBackIcon(R.mipmap.back_black)
+                .setTopToolBarMenuIcon(R.mipmap.options)
+                .setNaviBarArrowIcon(R.mipmap.segment)
+                .setNaviBarTextSize(20)
+                .setFileInfoColor(getColor(R.color.black))
+                .setFileNameSize(25);
+FileSelectorSettings settings = new FileSelectorSettings();
+            settings.setTheme(theme)
+                    .show(MainActivity.this);
+```
+
 # 类与方法
-FileSelectorSettings
+## FileSelectorTheme
+
+下面图片中给出了UI的属性作用位置的序号：
+
+![UI属性编号](https://img-blog.csdnimg.cn/941f10aeb70f43bd93e226511a275a59.png)
+
+| 属性 | 入参类型 | 注释 | 对应UI位置 |
+|--|--|--|:--:|
+| themeColor | Color-int/Color-String | 主题色，顶栏及状态栏 |1|
+| topToolBarBackIcon | Resource ID | 顶部返回按钮 |2|
+| topToolBarTitleColor | Color-int/Color-String | 顶部标题及提示文本颜色 |3|
+| topToolBarTitleSize | sp | 顶部标题及提示文本大小 |3|
+| topToolBarMenuIcon | Resource ID | 顶部菜单按钮 |4|
+| naviBarTextColor | Color-int/Color-String | 导航栏字体颜色 |5|
+| naviBarTextSize | sp | 导航栏文本大小 |5|
+| naviBarArrowIcon | Resource ID | 导航栏分隔箭头 |6|
+| fileNameColor | Color-int/Color-String | 文件(夹)名称字体颜色 |7|
+| fileNameSize | sp | 文件(夹)名称字体大小 |7|
+| fileInfoColor | Color-int/Color-String | 文件信息提示字体颜色 |8|
+| fileInfoSize | sp | 文件信息提示字体大小 |8|
+
+表中每个属性均有set方法，并有默认的属性，故该设置不是必须的设置。
+
+## FileSelectorSettings
 | 方法 | 注释 | 错误 |
 |--|--|--|
 | FileSelectorSettings setRootPath(String path) | 设置起始目录 |"初始路径不是一个目录或无权限"|
 | FileSelectorSettings setMaxFileSelect(int num) | 设置最大文件选择数 |无|
 | FileSelectorSettings setTitle(String title) | 设置标题 |无|
-| FileSelectorSettings setThemeColor(String color) | 设置主题颜色(包含标题栏和状态栏) |无|
+| FileSelectorSettings setTheme(FileSelectorTheme theme) | 设置界面主题(大部分图标及字体) |无|
 | FileSelectorSettings setFileTypesToSelect(FileInfo.FileType ... fileTypes)| 设置可选择的文件类型|"文件类型不能包含parent"|
 | FileSelectorSettings setFileTypesToShow(String ... extensions)| 设置可见的文件类型|后缀示例".txt",不填写则全部显示|
 | FileSelectorSettings setCustomizedIcons(String[] extensions, Context context, int ... icon_ids)| 设置自定义文件图标|后缀名和图标资源id应一一对应|
 | FileSelectorSettings setMoreOPtions(String[] optionsName, BasicParams.OnOptionClick...onOptionClicks) | 设置更多选项，第一个参数为选项名，第二个参数为选项点击事件 |选项名和点击响应数量必须对应|
 | static String getSystemRootPath() | 获取系统外部存储根目录：/storage/emulated/0 |无|
 
-FileInfo.FileType
+## FileInfo.FileType
 |变量| 解释 |
 |--|--|
 | Folder | 文件夹 |
@@ -148,7 +186,7 @@ FileInfo.FileType
 | Unknown | 除上述类型以外的其他文件类型 |
 | Parent | 不可用的变量 |
 
-BasicParams.OnOptionClick
+## BasicParams.OnOptionClick
 接口抽象方法：onclick
 
 ```java
