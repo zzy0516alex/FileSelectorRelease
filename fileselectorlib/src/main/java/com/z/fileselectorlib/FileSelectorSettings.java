@@ -41,11 +41,6 @@ public class FileSelectorSettings {
         return this;
     }
 
-//    public FileSelectorSettings setThemeColor(String color){
-//        basicParams.setColor(color);
-//        return this;
-//    }
-
     public FileSelectorSettings setTheme(FileSelectorTheme theme){
         basicParams.setTheme(theme);
         return this;

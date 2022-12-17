@@ -21,7 +21,6 @@ public class BasicParams {
     private String RootPath;
     private int MaxSelectNum;
     private String tips;
-    //private String color;
     private FileSelectorTheme theme;
     private FileInfo.FileType[] selectableFileTypes;
     private boolean needMoreOptions;
@@ -30,7 +29,6 @@ public class BasicParams {
     private String[] fileTypeFilter;
     private boolean useFilter;
     private Map<String, Bitmap> customIcon = new HashMap<>();
-
 
     public String getRootPath() {
         return RootPath;
@@ -55,15 +53,6 @@ public class BasicParams {
     public void setTips(String tips) {
         this.tips = tips;
     }
-
-//    public String getColor() {
-//        return color;
-//    }
-//
-//    public void setColor(String color) {
-//        this.color = color;
-//    }
-
 
     public FileSelectorTheme getTheme() {
         return theme;
