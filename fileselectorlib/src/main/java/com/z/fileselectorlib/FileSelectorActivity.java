@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -73,6 +74,7 @@ public class FileSelectorActivity extends AppCompatActivity {
     private Context context;
     private boolean onSelect=false;
     private int SelectNum=0;
+    private int parent_list_pos = 0;//父级文件列表的顶部元素索引
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,6 +128,7 @@ public class FileSelectorActivity extends AppCompatActivity {
         }
         else if (!currentPath.equals(BasicParams.BasicPath)){
             refreshFileList(new File(currentPath).getParent());
+            lvFileList.post(()-> lvFileList.setSelection(parent_list_pos));
         }
         else super.onBackPressed();
     }
@@ -201,10 +204,7 @@ public class FileSelectorActivity extends AppCompatActivity {
             public void onClick(View view, int position) {
                 List<String>sublist=RelativePaths.subList(0,position+1);
                 RelativePaths= new ArrayList<>(sublist);
-                getFileList(FileUtil.mergeAbsolutePath(RelativePaths));
-                fileListAdapter.updateFileList(currentFileList);
-                if (onSelect)fileListAdapter.clearSelections();
-                navigationAdapter.UpdatePathList(RelativePaths);
+                refreshFileList(FileUtil.mergeAbsolutePath(RelativePaths));
             }
         });
         navigation_view.setAdapter(navigationAdapter);
@@ -326,32 +326,33 @@ public class FileSelectorActivity extends AppCompatActivity {
     }
 
     private void setOnItemClick() {
-        onItemClickListener=new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                FileInfo file_select=currentFileList.get(position);
-                if (onSelect && file_select.getFileType() != FileInfo.FileType.Parent){
-                    FileListAdapter.ViewHolder viewHolder = (FileListAdapter.ViewHolder) view.getTag();
-                    if (file_select.FileFilter(BasicParams.getInstance().getSelectableFileTypes())) {
-                        if (SelectNum < BasicParams.getInstance().getMaxSelectNum() || viewHolder.ckSelector.isChecked()) {
-                            viewHolder.ckSelector.toggle();
-                            if (file_select.getFileType() != FileInfo.FileType.Parent) {
-                                fileListAdapter.ModifyFileSelected(position, viewHolder.ckSelector.isChecked());
-                                if (viewHolder.ckSelector.isChecked()) {
-                                    FileSelected.add(file_select.getFilePath());
-                                } else {
-                                    FileSelected.remove(file_select.getFilePath());
-                                }
-                                SelectNum = FileSelected.size();
-                                changeSelectNum(SelectNum);
+        onItemClickListener= (parent, view, position, id) -> {
+            FileInfo file_select=currentFileList.get(position);
+            if (onSelect && file_select.getFileType() != FileInfo.FileType.Parent){
+                FileListAdapter.ViewHolder viewHolder = (FileListAdapter.ViewHolder) view.getTag();
+                if (file_select.FileFilter(BasicParams.getInstance().getSelectableFileTypes())) {
+                    if (SelectNum < BasicParams.getInstance().getMaxSelectNum() || viewHolder.ckSelector.isChecked()) {
+                        viewHolder.ckSelector.toggle();
+                        if (file_select.getFileType() != FileInfo.FileType.Parent) {
+                            fileListAdapter.ModifyFileSelected(position, viewHolder.ckSelector.isChecked());
+                            if (viewHolder.ckSelector.isChecked()) {
+                                FileSelected.add(file_select.getFilePath());
+                            } else {
+                                FileSelected.remove(file_select.getFilePath());
                             }
+                            SelectNum = FileSelected.size();
+                            changeSelectNum(SelectNum);
                         }
-                    }else Toast.makeText(activity, "该文件类型不可选", Toast.LENGTH_SHORT).show();
-                }else {
-                    if (file_select.getFileType() == FileInfo.FileType.Folder ||
-                            file_select.getFileType() == FileInfo.FileType.Parent) {
-                        refreshFileList(file_select.getFilePath());
                     }
+                }else Toast.makeText(activity, "该文件类型不可选", Toast.LENGTH_SHORT).show();
+            }else {
+                if (file_select.getFileType() == FileInfo.FileType.Folder ) {
+                    parent_list_pos = lvFileList.getFirstVisiblePosition();
+                    refreshFileList(file_select.getFilePath());
+                }
+                else if (file_select.getFileType() == FileInfo.FileType.Parent){
+                    refreshFileList(file_select.getFilePath());
+                    lvFileList.post(()-> lvFileList.setSelection(parent_list_pos));
                 }
             }
         };
@@ -481,4 +482,8 @@ public class FileSelectorActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
 }
