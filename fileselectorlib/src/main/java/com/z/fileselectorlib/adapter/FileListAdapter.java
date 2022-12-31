@@ -125,7 +125,7 @@ public class FileListAdapter extends BaseAdapter {
         else viewHolder.ckSelector.setVisibility(View.INVISIBLE);
 
         if (SelectionMap !=null && isSelect && viewHolder.ckSelector!=null) {
-                viewHolder.ckSelector.setChecked(Objects.isNull(SelectionMap.get(position)) ? false : (boolean) SelectionMap.get(position));
+                viewHolder.ckSelector.setChecked(!Objects.isNull(SelectionMap.get(position)) && (boolean) SelectionMap.get(position));
         }
 
         return convertView;

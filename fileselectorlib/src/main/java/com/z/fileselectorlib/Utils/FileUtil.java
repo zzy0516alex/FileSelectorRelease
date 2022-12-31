@@ -1,10 +1,15 @@
 package com.z.fileselectorlib.Utils;
 
+import android.content.Context;
+import android.content.UriPermission;
+import android.net.Uri;
 import android.os.Build;
 
 import androidx.annotation.RequiresApi;
+import androidx.documentfile.provider.DocumentFile;
 
 import com.z.fileselectorlib.Objects.BasicParams;
+import com.z.fileselectorlib.Objects.FileInfo;
 
 import java.io.File;
 import java.text.Collator;
@@ -236,6 +241,17 @@ public class FileUtil {
         return i;
     }
 
+    public static int getSubFolderNum(DocumentFile documentFile){
+        int i = 0;
+        DocumentFile[] documentFiles = documentFile.listFiles();
+        for (DocumentFile file : documentFiles) {
+            if (file.getName().indexOf(".") != 0) {
+                i++;
+            }
+        }
+        return i;
+    }
+
     public static String getFileSize(long size) {
         StringBuffer bytes = new StringBuffer();
         DecimalFormat format = new DecimalFormat("###.0");
@@ -264,16 +280,22 @@ public class FileUtil {
     }
 
     public static void SortFilesByName(List<File> fileList) {
-        Collections.sort(fileList, new Comparator<File>() {
-            @Override
-            public int compare(File o1, File o2) {
-                if (o1.isDirectory() && o2.isFile())
-                    return -1;
-                if (o1.isFile() && o2.isDirectory())
-                    return 1;
-                return Collator.getInstance(java.util.Locale.CHINA).compare(o1.getName(), o2.getName());
-            }
+        Collections.sort(fileList, (o1, o2) -> {
+            if (o1.isDirectory() && o2.isFile())
+                return -1;
+            if (o1.isFile() && o2.isDirectory())
+                return 1;
+            return Collator.getInstance(java.util.Locale.CHINA).compare(o1.getName(), o2.getName());
+        });
+    }
 
+    public static void SortFilesByName(List<FileInfo> fileList, boolean ignore) {
+        Collections.sort(fileList, (o1, o2) -> {
+            if (o1.isDirectory() && (!o2.isDirectory()))
+                return -1;
+            if ((!o1.isDirectory()) && o2.isDirectory())
+                return 1;
+            return Collator.getInstance(java.util.Locale.CHINA).compare(o1.getFileName(), o2.getFileName());
         });
     }
 
@@ -303,5 +325,65 @@ public class FileUtil {
     @RequiresApi(api = Build.VERSION_CODES.O)
     public static String mergeAbsolutePath(ArrayList<String>paths){
         return BasicParams.BasicPath+File.separator+String.join("/",paths);
+    }
+
+    //判断是否已经获取了受保护的文件夹的访问权限
+    public static boolean isGrant(Context context, String path) {
+        String uri = changeToUriNormal(path);
+        for (UriPermission persistedUriPermission : context.getContentResolver().getPersistedUriPermissions()) {
+            if (persistedUriPermission.isReadPermission() && persistedUriPermission.getUri().toString().equals(uri)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //将path转换成可解析的uri文本
+    public static String changeToUriAndroidOrigin(String path) {
+        if (path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        String path2 = path.replace("/storage/emulated/0/", "").replace("/", "%2F");
+        return "content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fdata/document/primary%3A" + path2;
+    }
+
+    public static String changeToUriNormal(String path) {
+        path = path.replace("/storage/emulated/0/", "");
+        path = Uri.encode(path).replace("/", "%2F");
+        return ("content://com.android.externalstorage.documents/tree/primary%3A" + path);
+    }
+
+    public static String changeToPath(String uri){
+        String path = uri;
+        if (uri.contains("content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fdata"))
+            path = uri.replace("content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fdata/document/primary%3A", "").replace("%2F", "/");
+        else if (uri.contains("content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fobb"))
+            path = uri.replace("content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fobb/document/primary%3A", "").replace("%2F", "/");
+        path = Uri.decode(path);
+        return "/storage/emulated/0/"+path;
+    }
+
+    public static DocumentFile getDocumentFilePath(Context context, String path) {
+        String path_pattern = "/storage/emulated/0";
+        String rootUri = "content://com.android.externalstorage.documents/tree/primary%3A";
+        if (path.contains("/Android/data")) {
+            path_pattern = "/storage/emulated/0/Android/data";
+            rootUri = "content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fdata";
+        }
+        if (path.contains("/Android/obb")) {
+            path_pattern = "/storage/emulated/0/Android/obb";
+            rootUri = "content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fobb";
+        }
+        //String treeUri = "content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fdata/document/primary%3AAndroid%2Fdata";
+        DocumentFile document = DocumentFile.fromTreeUri(context, Uri.parse(rootUri));
+        path = path.replace(path_pattern, "");
+        String[] parts = path.split("/");
+        for (int i = 0; i < parts.length; i++) {
+            if (parts[i].equals(""))continue;
+            String encoded_path = Uri.decode(parts[i]);
+            if (document==null)break;
+            document = document.findFile(encoded_path);
+        }
+        return document;
     }
 }

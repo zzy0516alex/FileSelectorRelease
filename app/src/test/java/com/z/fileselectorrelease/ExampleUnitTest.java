@@ -4,6 +4,8 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
+import android.net.Uri;
+
 /**
  * Example local unit test, which will execute on the development machine (host).
  *
@@ -12,6 +14,9 @@ import static org.junit.Assert.*;
 public class ExampleUnitTest {
     @Test
     public void addition_isCorrect() {
-        assertEquals(4, 2 + 2);
+        String path_pattern = "/storage/emulated/0/Android/data/";
+        String path = "/storage/emulated/0/Android/data/";
+        path = path.replace(path_pattern, "");
+        System.out.println("path = " + path);
     }
 }

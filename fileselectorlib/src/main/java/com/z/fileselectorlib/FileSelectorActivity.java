@@ -1,12 +1,16 @@
 package com.z.fileselectorlib;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,15 +29,21 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
+import androidx.documentfile.provider.DocumentFile;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.z.fileselectorlib.Objects.BasicParams;
 import com.z.fileselectorlib.Objects.FileInfo;
+import com.z.fileselectorlib.Objects.FileList;
+import com.z.fileselectorlib.Threads.ListFileThread;
 import com.z.fileselectorlib.Utils.FileUtil;
 import com.z.fileselectorlib.Utils.PermissionUtil;
 import com.z.fileselectorlib.Utils.StatusBarUtil;
@@ -46,9 +56,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 public class FileSelectorActivity extends AppCompatActivity {
+    private static final int REQUEST_FOR_DATA_PATH = 20;
+    private enum Orientation{Forward, Backward, Init, Skip};
 
+    private FileList fileList;
     private ArrayList<FileInfo> currentFileList = new ArrayList<>();
     private ArrayList<String> FileSelected = new ArrayList<>();
     private ArrayList<String> RelativePaths = new ArrayList<>();
@@ -66,15 +80,20 @@ public class FileSelectorActivity extends AppCompatActivity {
     private NavigationAdapter navigationAdapter;
     private ImageView imMore;
     private PopupWindow moreOptions;
+    private SwipeRefreshLayout refreshLayout;
     private Window window;
     private AdapterView.OnItemClickListener onItemClickListener;
     private AdapterView.OnItemLongClickListener itemLongClickListener;
     private FileListAdapter fileListAdapter;
     private Activity activity;
     private Context context;
-    private boolean onSelect=false;
+    private SharedPreferences sharedPreferences;
+    private ListFileThread.FileListHandler handler;
+    private boolean init = true;//初次加载文件目录
+    private boolean onSelect = false;
     private int SelectNum=0;
     private int parent_list_pos = 0;//父级文件列表的顶部元素索引
+    private Orientation orientation = Orientation.Init;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +114,7 @@ public class FileSelectorActivity extends AppCompatActivity {
         imMore=findViewById(R.id.more);
         activity=this;
         context = this;
+        sharedPreferences = getSharedPreferences("FSConf",MODE_PRIVATE);
         setOnItemClick();
         setOnItemLongClick();
 
@@ -107,16 +127,37 @@ public class FileSelectorActivity extends AppCompatActivity {
         initRootButton();
         initMoreOptionsView();
 
+        FileSelectorTheme theme = BasicParams.getInstance().getTheme();
+        int theme_color= theme.getThemeColor();
+        refreshLayout = findViewById(R.id.fs_refresh);
+        refreshLayout.setColorSchemeColors(theme_color);
+        refreshLayout.setOnRefreshListener(() -> {
+            refreshFileList(currentPath, Orientation.Init);
+        });
+
+        fileList = new ViewModelProvider(this,ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication())).get(FileList.class);
+        fileList.getFileList().observe(this, fileInfo -> {
+            currentFileList = fileInfo;
+            if (init){
+                setFileList();
+                init = false;
+            }
+            fileListAdapter.updateFileList(currentFileList);
+            if (onSelect){
+                fileListAdapter.clearSelections();
+            }
+        });
+
+        handler = new ListFileThread.FileListHandler(fileInfoList -> {
+            if (fileInfoList.size()==0)return;
+            fileList.addToResult(fileInfoList);
+            fileList.sortByName();
+        });
+
 
         if (PermissionUtil.isStoragePermissionGranted(this)) {
             //get init files
-            String initPath= BasicParams.getInstance().getRootPath();
-            currentPath=initPath;
-            File[] test=(new File(initPath)).listFiles();
-            if (test!=null)getFileList(initPath);
-            setFileList();
-            setNavigationBar(initPath);
-
+            initFileList();
         }
 
     }
@@ -127,8 +168,7 @@ public class FileSelectorActivity extends AppCompatActivity {
             quitSelectMod();
         }
         else if (!currentPath.equals(BasicParams.BasicPath)){
-            refreshFileList(new File(currentPath).getParent());
-            lvFileList.post(()-> lvFileList.setSelection(parent_list_pos));
+            refreshFileList(new File(currentPath).getParent(), Orientation.Backward);
         }
         else super.onBackPressed();
     }
@@ -157,9 +197,7 @@ public class FileSelectorActivity extends AppCompatActivity {
                 moreOptions.dismiss();
                 BasicParams.getInstance().getOnOptionClicks()[position].onclick(activity,position,currentPath,FileSelected);
                 //刷新列表
-                getFileList(currentPath);
-                fileListAdapter.updateFileList(currentFileList);
-                if (onSelect)fileListAdapter.clearSelections();
+                refreshFileList(currentPath, Orientation.Init);
             });
         });
     }
@@ -181,16 +219,9 @@ public class FileSelectorActivity extends AppCompatActivity {
         tv_root_name.setTextSize(naviBarTextSize);
         im_path_segment.setImageResource(naviBarArrowIcon);
 
-        llRoot.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String rootPath= BasicParams.BasicPath;
-                getFileList(rootPath);
-                RelativePaths.clear();
-                fileListAdapter.updateFileList(currentFileList);
-                if (onSelect)fileListAdapter.clearSelections();
-                navigationAdapter.UpdatePathList(RelativePaths);
-            }
+        llRoot.setOnClickListener(v -> {
+            String rootPath= BasicParams.BasicPath;
+            refreshFileList(rootPath, Orientation.Skip);
         });
     }
 
@@ -198,13 +229,11 @@ public class FileSelectorActivity extends AppCompatActivity {
         RelativePaths= FileUtil.getRelativePaths(initPath);
         navigation_view.setLayoutManager(new LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false));
         navigationAdapter=new NavigationAdapter(this,RelativePaths);
-        navigationAdapter.setRecycleItemClickListener(new NavigationAdapter.OnRecycleItemClickListener() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void onClick(View view, int position) {
-                List<String>sublist=RelativePaths.subList(0,position+1);
-                RelativePaths= new ArrayList<>(sublist);
-                refreshFileList(FileUtil.mergeAbsolutePath(RelativePaths));
+        navigationAdapter.setRecycleItemClickListener((view, position) -> {
+            List<String>sublist=RelativePaths.subList(0,position+1);
+            RelativePaths= new ArrayList<>(sublist);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                refreshFileList(FileUtil.mergeAbsolutePath(RelativePaths), Orientation.Skip);
             }
         });
         navigation_view.setAdapter(navigationAdapter);
@@ -219,23 +248,15 @@ public class FileSelectorActivity extends AppCompatActivity {
 
     private void initBottomView() {
         BottomViewShow(View.INVISIBLE,0);
-        select_confirm.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent=new Intent();
-                Bundle bundle_back=new Bundle();
-                bundle_back.putStringArrayList(FileSelectorSettings.FILE_PATH_LIST_REQUEST,FileSelected);
-                intent.putExtras(bundle_back);
-                activity.setResult(FileSelectorSettings.BACK_WITH_SELECTIONS,intent);
-                activity.finish();
-            }
+        select_confirm.setOnClickListener(v -> {
+            Intent intent=new Intent();
+            Bundle bundle_back=new Bundle();
+            bundle_back.putStringArrayList(FileSelectorSettings.FILE_PATH_LIST_REQUEST,FileSelected);
+            intent.putExtras(bundle_back);
+            activity.setResult(FileSelectorSettings.BACK_WITH_SELECTIONS,intent);
+            activity.finish();
         });
-        select_cancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                quitSelectMod();
-            }
-        });
+        select_cancel.setOnClickListener(v -> quitSelectMod());
     }
 
     private void quitSelectMod() {
@@ -250,17 +271,14 @@ public class FileSelectorActivity extends AppCompatActivity {
     }
 
     private void setOnItemLongClick() {
-        itemLongClickListener=new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                if (!onSelect && currentFileList.get(position).getFileType() != FileInfo.FileType.Parent) {
-                    tv_select_num.setVisibility(View.VISIBLE);
-                    BottomViewShow(View.VISIBLE, 140);
-                    fileListAdapter.setSelect(true);
-                    onSelect=true;
-                }
-                return true;
+        itemLongClickListener= (parent, view, position, id) -> {
+            if (!onSelect && currentFileList.get(position).getFileType() != FileInfo.FileType.Parent) {
+                tv_select_num.setVisibility(View.VISIBLE);
+                BottomViewShow(View.VISIBLE, 140);
+                fileListAdapter.setSelect(true);
+                onSelect=true;
             }
+            return true;
         };
     }
 
@@ -272,12 +290,9 @@ public class FileSelectorActivity extends AppCompatActivity {
     }
 
     private void initBackBtn() {
-        imBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                activity.setResult(FileSelectorSettings.BACK_WITHOUT_SELECT);
-                activity.finish();
-            }
+        imBack.setOnClickListener(v -> {
+            activity.setResult(FileSelectorSettings.BACK_WITHOUT_SELECT);
+            activity.finish();
         });
     }
 
@@ -348,20 +363,22 @@ public class FileSelectorActivity extends AppCompatActivity {
             }else {
                 if (file_select.getFileType() == FileInfo.FileType.Folder ) {
                     parent_list_pos = lvFileList.getFirstVisiblePosition();
-                    refreshFileList(file_select.getFilePath());
+                    refreshFileList(file_select, Orientation.Forward);
                 }
                 else if (file_select.getFileType() == FileInfo.FileType.Parent){
-                    refreshFileList(file_select.getFilePath());
-                    lvFileList.post(()-> lvFileList.setSelection(parent_list_pos));
+                    refreshFileList(file_select, Orientation.Backward);
                 }
             }
         };
     }
 
-    private void refreshFileList(String path) {
+    private void refreshFileList(FileInfo parent, Orientation orientation) {
+        if (!PermissionUtil.isStoragePermissionGranted(this))return;
+        if (!refreshLayout.isRefreshing())refreshLayout.setRefreshing(true);
+        this.orientation = orientation;
+        String path = parent.getFilePath();
         currentPath= path;
-        getFileList(path);
-        fileListAdapter.updateFileList(currentFileList);
+        startListFileThread(parent);
         RelativePaths=FileUtil.getRelativePaths(path);
         navigationAdapter.UpdatePathList(RelativePaths);
         navigation_view.scrollToPosition(navigationAdapter.getItemCount()-1);
@@ -370,97 +387,167 @@ public class FileSelectorActivity extends AppCompatActivity {
         }
     }
 
+    private void refreshFileList(String parent_path, Orientation orientation) {
+        if (!PermissionUtil.isStoragePermissionGranted(this))return;
+        if (!refreshLayout.isRefreshing())refreshLayout.setRefreshing(true);
+        this.orientation = orientation;
+        currentPath= parent_path;
+        startListFileThread(parent_path);
+        RelativePaths=FileUtil.getRelativePaths(parent_path);
+        navigationAdapter.UpdatePathList(RelativePaths);
+        navigation_view.scrollToPosition(navigationAdapter.getItemCount()-1);
+        if (onSelect){
+            fileListAdapter.clearSelections();
+        }
+    }
 
-    private void getFileList(String Path) {
-        currentFileList.clear();
-        File initFile = new File(Path);
-        if (!Path.equals(BasicParams.BasicPath)){
+    private void startListFileThread(String initPath){
+        File file = new File(initPath);
+        FileInfo initFile = new FileInfo();
+        initFile.setFileName(file.getName());
+        initFile.setAccessType(FileInfo.judgeAccess(initPath));
+        initFile.setFileType(file.isDirectory()? FileInfo.FileType.Folder: FileInfo.FileType.Unknown);
+        initFile.setFilePath(initPath);
+        startListFileThread(initFile);
+    }
+
+    private void startListFileThread(FileInfo parent){
+        fileList.clear();
+        File initFile = new File(parent.getFilePath());
+        if (!parent.getFilePath().equals(BasicParams.BasicPath)){
             FileInfo fileInfo=new FileInfo();
             fileInfo.setFileName("返回上一级");
             fileInfo.setFileLastUpdateTime("");
             fileInfo.setFileType(FileInfo.FileType.Parent);
             fileInfo.setFilePath(initFile.getParent());
             fileInfo.setFileCount(-1);
-            currentFileList.add(fileInfo);
+            fileInfo.setAccessType(FileInfo.judgeAccess(fileInfo.getFilePath()));
+            fileList.addToResult(fileInfo);
         }
-        File[] files = initFile.listFiles();
-        if (files == null){
-            Log.d("myfile", "can not list file");
-            return;
-        }
-        List<File> file_list= Arrays.asList(files);
-        FileUtil.SortFilesByName(file_list);
-        for (File f : file_list) {
-            if (f.getName().indexOf(".") != 0) {
-                //隐藏文件不显示
-                if (f.isDirectory()) {
-                    //文件夹
-                    FileInfo fileInfo = new FileInfo();
-                    fileInfo.setFileName(f.getName());
-                    fileInfo.setFileLastUpdateTime(TimeUtil.getDateInString(new Date(f.lastModified())));
-                    fileInfo.setFileType(FileInfo.FileType.Folder);
-                    fileInfo.setFilePath(f.getPath());
-                    fileInfo.setFileCount(FileUtil.getSubfolderNum(f.getPath()));
-                    Log.d("myfile", fileInfo.getFileName() + ":" + fileInfo.getFileCount());
-                    currentFileList.add(fileInfo);
-                } else {
-                    if (BasicParams.getInstance().isUseFilter()) {
-                        if (!FileUtil.fileFilter(f.getPath(),BasicParams.getInstance().getFileTypeFilter()))
-                            continue;
-                    }
-                    if (FileUtil.isAudioFileType(f.getPath())) {
-                        FileInfo fileInfo = new FileInfo();
-                        fileInfo.setFileName(f.getName());
-                        fileInfo.setFileLastUpdateTime(TimeUtil.getDateInString(new Date(f.lastModified())));
-                        fileInfo.setFilePath(f.getPath());
-                        fileInfo.setFileType(FileInfo.FileType.Audio);
-                        fileInfo.setFileCount(f.length());
-                        Log.d("myfile", fileInfo.getFileName() + ":" + fileInfo.getFileCount());
-                        currentFileList.add(fileInfo);
-                    }
-                    else if (FileUtil.isImageFileType(f.getPath())){
-                        FileInfo fileInfo = new FileInfo();
-                        fileInfo.setFileName(f.getName());
-                        fileInfo.setFileLastUpdateTime(TimeUtil.getDateInString(new Date(f.lastModified())));
-                        fileInfo.setFilePath(f.getPath());
-                        fileInfo.setFileType(FileInfo.FileType.Image);
-                        fileInfo.setFileCount(f.length());
-                        Log.d("myfile", fileInfo.getFileName() + ":" + fileInfo.getFileCount());
-                        currentFileList.add(fileInfo);
-                    }
-                    else if (FileUtil.isVideoFileType(f.getPath())){
-                        FileInfo fileInfo = new FileInfo();
-                        fileInfo.setFileName(f.getName());
-                        fileInfo.setFileLastUpdateTime(TimeUtil.getDateInString(new Date(f.lastModified())));
-                        fileInfo.setFilePath(f.getPath());
-                        fileInfo.setFileType(FileInfo.FileType.Video);
-                        fileInfo.setFileCount(f.length());
-                        Log.d("myfile", fileInfo.getFileName() + ":" + fileInfo.getFileCount());
-                        currentFileList.add(fileInfo);
-                    }
-                    else if (FileUtil.isTextFileType(f.getPath())){
-                        FileInfo fileInfo = new FileInfo();
-                        fileInfo.setFileName(f.getName());
-                        fileInfo.setFileLastUpdateTime(TimeUtil.getDateInString(new Date(f.lastModified())));
-                        fileInfo.setFilePath(f.getPath());
-                        fileInfo.setFileType(FileInfo.FileType.Text);
-                        fileInfo.setFileCount(f.length());
-                        Log.d("myfile", fileInfo.getFileName() + ":" + fileInfo.getFileCount());
-                        currentFileList.add(fileInfo);
-                    }
-                    else {
-                        FileInfo fileInfo = new FileInfo();
-                        fileInfo.setFileName(f.getName());
-                        fileInfo.setFileLastUpdateTime(TimeUtil.getDateInString(new Date(f.lastModified())));
-                        fileInfo.setFilePath(f.getPath());
-                        fileInfo.setFileType(FileInfo.FileType.Unknown);
-                        fileInfo.setFileCount(f.length());
-                        Log.d("myfile", fileInfo.getFileName() + ":" + fileInfo.getFileCount());
-                        currentFileList.add(fileInfo);
-                    }
+        if (parent.getAccessType()== FileInfo.AccessType.Open) {
+            File[] files = initFile.listFiles();
+            if (files == null) {
+                if (parent.getFilePath().contains("Android/data")) {
+                    Log.d("list file", "enter Android/data");
+                    handleProtectedFiles(parent);
                 }
+                else if (parent.getFilePath().contains("Android/obb")){
+                    handleProtectedFiles(parent);
+                }
+                else Log.d("list file", "can not list file");
+                return;
+            }
+            handleNormalFiles(files);
+        }
+        else {
+            handleProtectedFiles(parent);
+        }
+    }
+
+    private void handleNormalFiles(File[] files) {
+        int parts = files.length/20;
+        CountDownLatch countDownLatch = new CountDownLatch(parts+1);
+        int index = 0;
+        for (int i = 0; i < parts+1; i++) {
+            int size = 20;
+            if (i==parts)size = files.length % 20;
+            if (size==0)continue;
+            File[] sub_files = new File[size];
+            for (int j = 0; j < size; j++) {
+                sub_files[j] = files[index];
+                index++;
+            }
+            ListFileThread thread = new ListFileThread(sub_files);
+            thread.setHandler(handler);
+            thread.setCountDownLatch(countDownLatch);
+            thread.start();
+        }
+        new Thread(()->{
+            try {
+                countDownLatch.await();
+                runOnUiThread(()->{
+                    if (orientation == Orientation.Backward)
+                        lvFileList.post(()-> lvFileList.setSelection(parent_list_pos));
+                    if (refreshLayout.isRefreshing())
+                        refreshLayout.setRefreshing(false);
+                });
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void handleProtectedFiles(FileInfo parent) {
+        String grant_key = "";
+        if (parent.getFilePath().contains("Android/data"))grant_key = "data_path_granted";
+        if (parent.getFilePath().contains("Android/obb"))grant_key = "obb_path_granted";
+        boolean data_all_granted = sharedPreferences.getBoolean(grant_key, false);
+        boolean granted = FileUtil.isGrant(context, parent.getFilePath());
+        if (!granted && !data_all_granted) grantPermissionForProtectedFile(parent.getFilePath());
+        else{
+            DocumentFile documentFile = FileUtil.getDocumentFilePath(context, parent.getFilePath());
+            if (documentFile == null) {
+                Toast.makeText(context, "该路径无法识别", Toast.LENGTH_SHORT).show();
+                if (refreshLayout.isRefreshing())
+                    refreshLayout.setRefreshing(false);
+                return;
+            }
+            if (documentFile.isDirectory()) {
+                DocumentFile[] documentFiles = documentFile.listFiles();
+                int parts = documentFiles.length/20;
+                CountDownLatch countDownLatch = new CountDownLatch(parts+1);
+                int index = 0;boolean isEmpty = false;
+                for (int i = 0; i < parts+1; i++) {
+                    int size = 20;
+                    if (i==parts)size = documentFiles.length % 20;
+                    if (size==0){
+                        isEmpty = true;break;
+                    }
+                    DocumentFile[] sub_files = new DocumentFile[size];
+                    for (int j = 0; j < size; j++) {
+                        sub_files[j] = documentFiles[index];
+                        index++;
+                    }
+                    ListFileThread thread = new ListFileThread(sub_files);
+                    thread.setHandler(handler);
+                    thread.setCountDownLatch(countDownLatch);
+                    thread.start();
+                }
+                if (isEmpty){
+                    if (refreshLayout.isRefreshing())
+                        refreshLayout.setRefreshing(false);
+                    return;
+                }
+                new Thread(()->{
+                    try {
+                        countDownLatch.await();
+                        runOnUiThread(()->{
+                            if (orientation == Orientation.Backward)
+                                lvFileList.post(()-> lvFileList.setSelection(parent_list_pos));
+                            if (refreshLayout.isRefreshing())
+                                refreshLayout.setRefreshing(false);
+                        });
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }).start();
             }
         }
+    }
+
+    private void grantPermissionForProtectedFile(String path) {
+        String uri = FileUtil.changeToUriAndroidOrigin(path);//调用方法，把path转换成可解析的uri文本
+        Uri parse = Uri.parse(uri);
+        Intent intent = new Intent("android.intent.action.OPEN_DOCUMENT_TREE");
+        intent.addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                        | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+                        | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, parse);
+        }
+        startActivityForResult(intent, REQUEST_FOR_DATA_PATH);//开始授权
     }
 
     @Override
@@ -473,12 +560,44 @@ public class FileSelectorActivity extends AppCompatActivity {
         if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
             //resume tasks needing this permission
             Log.i("permission", "granted");
-            //TODO: 再次加载文件目录
-            String initPath= BasicParams.getInstance().getRootPath();
-            File[] test=(new File(initPath)).listFiles();
-            if (test!=null)getFileList(initPath);
-            setFileList();
-            setNavigationBar(initPath);
+            initFileList();
+        }
+        else Toast.makeText(context, "未获得文件读写权限", Toast.LENGTH_SHORT).show();
+    }
+
+    private void initFileList() {
+        if (!refreshLayout.isRefreshing())
+            refreshLayout.setRefreshing(true);
+        String initPath = BasicParams.getInstance().getRootPath();
+        File[] test = (new File(initPath)).listFiles();
+        DocumentFile documentFile = FileUtil.getDocumentFilePath(context, initPath);
+        if (test == null && documentFile == null){
+            initPath = BasicParams.BasicPath;
+        }
+        startListFileThread(initPath);
+        currentPath = initPath;
+        setNavigationBar(initPath);
+    }
+
+    @SuppressLint("WrongConstant")
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (refreshLayout.isRefreshing())
+            refreshLayout.setRefreshing(false);
+        Uri uri;
+        if (data == null & requestCode == REQUEST_FOR_DATA_PATH) {
+            Log.d("file permission","request permission failed");
+            return;
+        }
+        if (requestCode == REQUEST_FOR_DATA_PATH && (uri = data.getData()) != null) {
+            getContentResolver().takePersistableUriPermission(uri, data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION));//保存目录的访问权限
+            String grant_key = "";
+            if (currentPath.contains("Android/data"))grant_key = "data_path_granted";
+            if (currentPath.contains("Android/obb"))grant_key = "obb_path_granted";
+            sharedPreferences.edit().putBoolean(grant_key,true).apply();
+            refreshFileList(currentPath,Orientation.Forward);
         }
     }
 

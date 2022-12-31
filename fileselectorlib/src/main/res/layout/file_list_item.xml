@@ -9,58 +9,64 @@
         android:id="@+id/FileIcon"
         android:src="@mipmap/file_unknown"
         android:layout_centerVertical="true"/>
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="5dp"
-        android:orientation="vertical"
-        android:layout_toEndOf="@+id/FileIcon">
+        android:layout_marginEnd="50dp"
+        android:layout_toEndOf="@+id/FileIcon"
+        android:orientation="vertical">
+
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:id="@+id/FileName"
-            android:text="我的文档"
-            android:textSize="18sp"
-            android:layout_marginTop="8dp"
-            android:layout_marginHorizontal="3dp"
-            android:textColor="@color/black"
-            android:lines="1"
-            android:ellipsize="middle"/>
-        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="3dp"
+            android:layout_marginTop="8dp"
+            android:ellipsize="middle"
+            android:lines="1"
+            android:text="我的文档"
+            android:textColor="@color/black"
+            android:textSize="18sp" />
+
+        <LinearLayout
             android:id="@+id/FileInfo"
-            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="3dp"
             android:layout_marginTop="4dp"
             android:layout_marginBottom="10dp"
-            android:layout_marginHorizontal="3dp">
+            android:orientation="horizontal">
+
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:id="@+id/FileCount"
-                android:text="共2项"
-                android:textSize="15sp"
-                android:textColor="@color/gray"/>
-            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="共2项"
+                android:textColor="@color/gray"
+                android:textSize="15sp" />
+
+            <TextView
                 android:id="@+id/FileDate"
-                android:text="2020-12-23"
-                android:textSize="15sp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:textColor="@color/gray"/>
+                android:text="2020-12-23"
+                android:textColor="@color/gray"
+                android:textSize="15sp" />
         </LinearLayout>
     </LinearLayout>
 
     <CheckBox
+        android:id="@+id/select_box"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:id="@+id/select_box"
-        android:layout_centerVertical="true"
         android:layout_alignParentEnd="true"
-        android:layout_marginEnd="15dp"
+        android:layout_centerVertical="true"
         android:layout_marginStart="10dp"
+        android:layout_marginEnd="15dp"
+        android:clickable="false"
         android:focusable="false"
-        android:focusableInTouchMode="false"
-        android:clickable="false"/>
+        android:focusableInTouchMode="false" />
 </RelativeLayout>
