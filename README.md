@@ -16,19 +16,7 @@ GitHub地址：[Fileselector
  ### 实例展示
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20201230203801806.jpg?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NDM3MDUwNg==,size_16,color_FFFFFF,t_70#pic_center)
 
-顶部导航栏可点击
-
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20201230204002283.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NDM3MDUwNg==,size_16,color_FFFFFF,t_70#pic_center)
-
-长按条目可选择
-
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20201230204039400.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NDM3MDUwNg==,size_16,color_FFFFFF,t_70#pic_center)
-
-可自定义拓展功能
-
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20201230204109978.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NDM3MDUwNg==,size_16,color_FFFFFF,t_70#pic_center)
-
-
+更多预览图请访问[我的博客](https://blog.csdn.net/weixin_44370506/article/details/111828374)
 
  
  # 使用方法
@@ -99,7 +87,7 @@ FileSelectorSettings settings = new FileSelectorSettings();
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == FileSelectorSettings.REQUEST_CODE && resultCode == FileSelectorSettings.BACK_WITH_SELECTIONS){
+        if (requestCode == FileSelectorSettings.FILE_LIST_REQUEST_CODE && resultCode == FileSelectorSettings.BACK_WITH_SELECTIONS){
             assert data != null;
             Bundle bundle=data.getExtras();
             assert bundle != null;
@@ -142,6 +130,46 @@ FileSelectorSettings settings = new FileSelectorSettings();
                     .show(MainActivity.this);
 ```
 
+## 访问data或obb文件夹
+启动文件选择器
+```java
+FileSelectorSettings settings=new FileSelectorSettings();
+settings.setRootPath(FileSelectorSettings.getSystemRootPath() + "/Android/data")
+        .setTitle("请选择文件夹")
+        .setFileTypesToSelect(FileInfo.FileType.Folder)
+        .show(this);
+```
+在onActivityResult中
+
+```java
+@Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode==FileSelectorSettings.FILE_LIST_REQUEST_CODE && resultCode==FileSelectorSettings.BACK_WITH_SELECTIONS){
+            assert data != null;
+            Bundle bundle=data.getExtras();
+            assert bundle != null;
+            ArrayList<String> FilePathSelected
+                    =bundle.getStringArrayList(FileSelectorSettings.FILE_PATH_LIST_REQUEST);
+            for (String file_path :
+                    FilePathSelected) {
+                FileInfo.AccessType accessType = FileInfo.judgeAccess(file_path);
+                switch(accessType){
+                    case Open:
+                        File file = new File(file_path);
+                        break;
+                    case Protected:
+                        DocumentFile documentFile = FileUtil.getDocumentFilePath(this,file_path);
+                        break;
+                    default:
+                }
+                Log.v("file_sel", file_path);
+            }
+        }
+    }
+```
+注意通过FileInfo.judgeAccess方法区分是否是受保护的系统文件夹，如果是，则应该通过**DocumentFile**的方式来访问。
+
 # 类与方法
 ## FileSelectorTheme
 
@@ -167,13 +195,14 @@ FileSelectorSettings settings = new FileSelectorSettings();
 表中每个属性均有set方法，并有默认的属性，故该设置不是必须的设置。
 
 ## FileSelectorSettings
-| 方法 | 注释 | 错误 |
+| 方法 | 作用 | 注释 |
 |--|--|--|
-| FileSelectorSettings setRootPath(String path) | 设置起始目录 |"初始路径不是一个目录或无权限"|
+| FileSelectorSettings setRootPath(String path) | 设置起始目录 |无|
+| FileSelectorSettings setFileListRequestCode(int requestCode)| 设置Activity请求码 |默认为512|
 | FileSelectorSettings setMaxFileSelect(int num) | 设置最大文件选择数 |无|
 | FileSelectorSettings setTitle(String title) | 设置标题 |无|
 | FileSelectorSettings setTheme(FileSelectorTheme theme) | 设置界面主题(大部分图标及字体) |无|
-| FileSelectorSettings setFileTypesToSelect(FileInfo.FileType ... fileTypes)| 设置可选择的文件类型|"文件类型不能包含parent"|
+| FileSelectorSettings setFileTypesToSelect(FileInfo.FileType ... fileTypes)| 设置可选择的文件类型|文件类型不能包含parent|
 | FileSelectorSettings setFileTypesToShow(String ... extensions)| 设置可见的文件类型|后缀示例".txt",不填写则全部显示|
 | FileSelectorSettings setCustomizedIcons(String[] extensions, Context context, int ... icon_ids)| 设置自定义文件图标|后缀名和图标资源id应一一对应|
 | FileSelectorSettings setMoreOPtions(String[] optionsName, BasicParams.OnOptionClick...onOptionClicks) | 设置更多选项，第一个参数为选项名，第二个参数为选项点击事件 |选项名和点击响应数量必须对应|
@@ -189,6 +218,12 @@ FileSelectorSettings settings = new FileSelectorSettings();
 | Text | 文本文件 |
 | Unknown | 除上述类型以外的其他文件类型 |
 | Parent | 不可用的变量 |
+
+## FileInfo.AccessType
+|变量| 解释 |
+|--|--|
+| Open | 普通文件(夹) |
+| Protected | Android系统保护的文件(夹)，必须通过SAF框架访问 |
 
 ## BasicParams.OnOptionClick
 接口抽象方法：onclick
