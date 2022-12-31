@@ -92,14 +92,18 @@
             android:layout_marginTop="5dp" />
     </LinearLayout>
 
-
-    <ListView
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/fs_refresh"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@+id/top_view2"
-        android:layout_above="@+id/bottom_view"
-        android:id="@+id/FileList"
-        android:divider="@null"/>
+        android:layout_above="@+id/bottom_view">
+        <ListView
+            android:id="@+id/FileList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="@null" />
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
