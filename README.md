@@ -14,7 +14,7 @@ GitHub地址：[Fileselector
  9. 采用多线程加载，打开文件列表更迅捷
  
  ### 实例展示
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20201230203801806.jpg?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NDM3MDUwNg==,size_16,color_FFFFFF,t_70#pic_center)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/3f805fa469f648f9b4fd299333806c12.gif#pic_center)
 
 更多预览图请访问[我的博客](https://blog.csdn.net/weixin_44370506/article/details/111828374)
 
@@ -34,7 +34,7 @@ allprojects {
 gradle:app 中
 
 ```java
-implementation 'com.github.zzy0516alex:FileSelectorRelease:v5.3'
+implementation 'com.github.zzy0516alex:FileSelectorRelease:v6.0'
 ```
 Manifest中
 
@@ -129,6 +129,19 @@ FileSelectorSettings settings = new FileSelectorSettings();
             settings.setTheme(theme)
                     .show(MainActivity.this);
 ```
+
+## 更改默认的文件图标
+本组件提供了一组默认的文件图标，如下：
+| 图标资源名称 | 对应文件类型 |
+|:--:|:--:|
+| file_folder.png | 文件夹 |
+| file_audio.png | 音频文件 |
+| file_image.png | 图片文件 |
+| file_text.png | 文本文件 |
+| file_video.png | 视频文件 |
+| file_unknown.png | 其他文件 |
+
+只需要在 **res > mipmap** 文件夹中添加同名的替换文件即可更改新图标。
 
 ## 访问data或obb文件夹
 启动文件选择器
