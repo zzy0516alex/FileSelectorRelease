@@ -1,13 +1,17 @@
-# 一款具有多种功能的文件选择器
+# 一款具有多种功能的文件选择器，支持访问Android/data(obb)等系统文件夹
 # 介绍
 GitHub地址：[Fileselector
 ](https://github.com/zzy0516alex/FileSelectorRelease)
 
  1. 这是一个文件选择器
- 2. 可以区分多种文件类型
+ 2. 可以区分多种文件类型，并支持自定义它们的图标
  3. 支持多选和单选
- 4. 可以选择指定类型文件
- 5. 提供更多功能拓展
+ 4. 可以对选择或显示的文件类型进行指定
+ 5. 提供功能拓展菜单进行自定义
+ 6. 支持访问/选择Android系统文件(夹)
+ 7. 支持文件列表下拉刷新
+ 8. 支持非英文路径显示和访问
+ 9. 采用多线程加载，打开文件列表更迅捷
  
  ### 实例展示
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20201230203801806.jpg?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NDM3MDUwNg==,size_16,color_FFFFFF,t_70#pic_center)
