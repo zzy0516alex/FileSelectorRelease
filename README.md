@@ -25,9 +25,9 @@ gradle:project 中
 ```java
 allprojects {
     repositories {
-        google()
+        ...
         maven { url 'https://www.jitpack.io' }
-        jcenter()
+        ...
     }
 }
 ```
