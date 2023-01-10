@@ -58,7 +58,7 @@ FileSelectorSettings settings = new FileSelectorSettings();
                         .setMaxFileSelect(2)//最大文件选择数
                         .setTitle("请选择文件夹")//标题
                         .setFileTypesToSelect(FileInfo.FileType.Folder)//可选择文件类型
-                        .setMoreOPtions(new String[]{"新建文件夹", "删除文件"},
+                        .setMoreOptions(new String[]{"新建文件夹", "删除文件"},
                                 new BasicParams.OnOptionClick() {
                                     @Override
                                     public void onclick(Activity activity, int position, String currentPath, ArrayList<String> FilePathSelected) {
@@ -107,7 +107,7 @@ FileSelectorSettings settings = new FileSelectorSettings();
             settings.setRootPath(FileSelectorSettings.getSystemRootPath())
                     .setMaxFileSelect(2)
                     .setTitle("请选择文件夹")
-                    .setFileTypesToSelect(FileInfo.FileType.Unknown)//选择自定义后缀的文件此处参数需为Unknown
+                    .setFileTypesToSelect(FileInfo.FileType.Unknown)//选择自定义后缀的文件此处参数需为Unknown/File
                     .setFileTypesToShow(".cer")//自定义可见的文件后缀
                     .setCustomizedIcons(new String[]{".cer"},context,R.mipmap.file_cert)//自定义文件图标
                     .show(MainActivity.this);
@@ -215,10 +215,10 @@ settings.setRootPath(FileSelectorSettings.getSystemRootPath() + "/Android/data")
 | FileSelectorSettings setMaxFileSelect(int num) | 设置最大文件选择数 |无|
 | FileSelectorSettings setTitle(String title) | 设置标题 |无|
 | FileSelectorSettings setTheme(FileSelectorTheme theme) | 设置界面主题(大部分图标及字体) |无|
-| FileSelectorSettings setFileTypesToSelect(FileInfo.FileType ... fileTypes)| 设置可选择的文件类型|文件类型不能包含parent|
+| FileSelectorSettings setFileTypesToSelect(FileInfo.FileType ... fileTypes)| 设置可选择的文件类型|填入FileType，可以多选，但不能包含parent类型|
 | FileSelectorSettings setFileTypesToShow(String ... extensions)| 设置可见的文件类型|后缀示例".txt",不填写则全部显示|
 | FileSelectorSettings setCustomizedIcons(String[] extensions, Context context, int ... icon_ids)| 设置自定义文件图标|后缀名和图标资源id应一一对应|
-| FileSelectorSettings setMoreOPtions(String[] optionsName, BasicParams.OnOptionClick...onOptionClicks) | 设置更多选项，第一个参数为选项名，第二个参数为选项点击事件 |选项名和点击响应数量必须对应|
+| FileSelectorSettings setMoreOptions(String[] optionsName, BasicParams.OnOptionClick...onOptionClicks) | 设置更多选项，第一个参数为选项名，第二个参数为选项点击事件 |选项名和点击响应数量必须对应|
 | static String getSystemRootPath() | 获取系统外部存储根目录：/storage/emulated/0 |无|
 
 ## FileInfo.FileType
@@ -230,6 +230,7 @@ settings.setRootPath(FileSelectorSettings.getSystemRootPath() + "/Android/data")
 | Audio | 音频文件 |
 | Text | 文本文件 |
 | Unknown | 除上述类型以外的其他文件类型 |
+| File | 除Folder类型以外的其他文件类型 |
 | Parent | 不可用的变量 |
 
 ## FileInfo.AccessType
