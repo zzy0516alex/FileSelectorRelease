@@ -5,7 +5,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.documentfile.provider.DocumentFile;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -13,8 +12,6 @@ import com.z.fileselectorlib.FileSelectorSettings;
 import com.z.fileselectorlib.FileSelectorTheme;
 import com.z.fileselectorlib.Objects.FileInfo;
 import com.z.fileselectorlib.Utils.FileUtil;
-
-import org.w3c.dom.DocumentFragment;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,9 +30,24 @@ public class MainActivity extends AppCompatActivity {
                 .setTheme(theme)
                 .setMaxFileSelect(2)
                 .setTitle("请选择文件夹")
-                .setFileTypesToSelect(FileInfo.FileType.Folder)
+                .setFileTypesToSelect(FileInfo.FileType.File, FileInfo.FileType.Text)
                 .setFileListRequestCode(544)
-                .setCustomizedIcons(new String[]{".dat"},this,R.mipmap.file_dat)
+                .setCustomizedIcons(new String[]{".apk"},this,R.mipmap.file_custom_apk)
+                .setMoreOptions(new String[]{"新建文件夹", "删除文件"},
+                        (activity, position, currentPath, FilePathSelected) -> {
+                            File Folder =new File(currentPath,"新文件夹");
+                            if(!Folder.exists()){
+                                Folder.mkdir();
+                            }
+                        }, (activity, position, currentPath, FilePathSelected) -> {
+                            if (FilePathSelected!=null){
+                                for (String path :
+                                        FilePathSelected) {
+                                    File delFile=new File(path);
+                                    delFile.delete();
+                                }
+                            }
+                        })
                 .show(this);
     }
 

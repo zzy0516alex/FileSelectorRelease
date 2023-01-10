@@ -245,6 +245,7 @@ public class FileUtil {
         int i = 0;
         DocumentFile[] documentFiles = documentFile.listFiles();
         for (DocumentFile file : documentFiles) {
+            if (file.getName()==null)continue;
             if (file.getName().indexOf(".") != 0) {
                 i++;
             }

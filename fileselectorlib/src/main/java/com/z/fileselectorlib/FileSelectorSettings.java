@@ -83,7 +83,7 @@ public class FileSelectorSettings {
         return this;
     }
 
-    public FileSelectorSettings setMoreOPtions(String[] optionsName, BasicParams.OnOptionClick...onOptionClicks){
+    public FileSelectorSettings setMoreOptions(String[] optionsName, BasicParams.OnOptionClick...onOptionClicks){
         if (optionsName.length!=onOptionClicks.length){
             throw new IllegalArgumentException("选项名和点击响应必须一一对应");
         }

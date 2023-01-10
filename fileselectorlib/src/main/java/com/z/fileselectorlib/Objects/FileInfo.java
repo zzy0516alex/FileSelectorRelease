@@ -4,7 +4,7 @@ import com.z.fileselectorlib.Utils.FileUtil;
 
 public class FileInfo {
     public enum AccessType{Open,Protected}
-    public enum FileType{Folder,Video,Audio,Image,Text,Unknown,Parent}
+    public enum FileType{Folder,Video,Audio,Image,Text,Unknown,File,Parent}
     private String FileName;
     private long FileCount;//如果是文件夹则表示子目录项数,如果不是文件夹则表示文件大小，-1不显示
     private String FileLastUpdateTime;
@@ -85,6 +85,7 @@ public class FileInfo {
     public boolean FileFilter(FileType[] types){
         for (FileType type:types) {
             if (this.fileType==type)return true;
+            if (type == FileType.File && this.fileType!=FileType.Folder)return true;
         }
         return false;
     }
