@@ -34,7 +34,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.documentfile.provider.DocumentFile;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -47,16 +46,14 @@ import com.z.fileselectorlib.Threads.ListFileThread;
 import com.z.fileselectorlib.Utils.FileUtil;
 import com.z.fileselectorlib.Utils.PermissionUtil;
 import com.z.fileselectorlib.Utils.StatusBarUtil;
-import com.z.fileselectorlib.Utils.TimeUtil;
 import com.z.fileselectorlib.adapter.FileListAdapter;
 import com.z.fileselectorlib.adapter.NavigationAdapter;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 public class FileSelectorActivity extends AppCompatActivity {
     private static final int REQUEST_FOR_DATA_PATH = 20;
@@ -149,7 +146,10 @@ public class FileSelectorActivity extends AppCompatActivity {
         });
 
         handler = new ListFileThread.FileListHandler(fileInfoList -> {
-            if (fileInfoList.size()==0)return;
+            if (fileInfoList.size()==0){
+                if (refreshLayout.isRefreshing())refreshLayout.setRefreshing(false);
+                return;
+            }
             fileList.addToResult(fileInfoList);
             fileList.sortByName();
         });
@@ -195,14 +195,14 @@ public class FileSelectorActivity extends AppCompatActivity {
             moreOptions.setOnDismissListener(() -> BackGroundAlpha(1.0f));
             listView.setOnItemClickListener((parent, view, position, id) -> {
                 moreOptions.dismiss();
-                BasicParams.getInstance().getOnOptionClicks()[position].onclick(activity,position,currentPath,FileSelected);
-                //刷新列表
-                refreshFileList(currentPath, Orientation.Init);
+                List<String> filePathList = currentFileList.stream().filter(fileInfo -> fileInfo.getFileType()!= FileInfo.FileType.Parent)
+                        .map(FileInfo::getFilePath).collect(Collectors.toList());
+                BasicParams.getInstance().getOnOptionClicks()[position].onclick(this,currentPath,filePathList,FileSelected);
             });
         });
     }
 
-    public void BackGroundAlpha(float f) {
+    private void BackGroundAlpha(float f) {
         WindowManager.LayoutParams layoutParams = activity.getWindow().getAttributes();
         layoutParams.alpha = f;
         activity.getWindow().setAttributes(layoutParams);
@@ -273,8 +273,10 @@ public class FileSelectorActivity extends AppCompatActivity {
     private void setOnItemLongClick() {
         itemLongClickListener= (parent, view, position, id) -> {
             if (!onSelect && currentFileList.get(position).getFileType() != FileInfo.FileType.Parent) {
-                tv_select_num.setVisibility(View.VISIBLE);
+                if (BasicParams.getInstance().getMaxSelectNum()!=-1)
+                    tv_select_num.setVisibility(View.VISIBLE);
                 BottomViewShow(View.VISIBLE, 140);
+                fileListAdapter.clearSelections();
                 fileListAdapter.setSelect(true);
                 onSelect=true;
             }
@@ -282,7 +284,7 @@ public class FileSelectorActivity extends AppCompatActivity {
         };
     }
 
-    public void BottomViewShow(int visible, int i) {
+    private void BottomViewShow(int visible, int i) {
         llBottomView.setVisibility(visible);
         ViewGroup.LayoutParams params = llBottomView.getLayoutParams();
         params.height = i;
@@ -340,16 +342,22 @@ public class FileSelectorActivity extends AppCompatActivity {
         tv_select_num.setText(selectNum);
     }
 
+    private boolean reachSelectNumLimit(int selectNum){
+        int maxSelectNum = BasicParams.getInstance().getMaxSelectNum();
+        if (maxSelectNum == -1)return false;
+        else return selectNum >= maxSelectNum;
+    }
+
     private void setOnItemClick() {
         onItemClickListener= (parent, view, position, id) -> {
             FileInfo file_select=currentFileList.get(position);
             if (onSelect && file_select.getFileType() != FileInfo.FileType.Parent){
                 FileListAdapter.ViewHolder viewHolder = (FileListAdapter.ViewHolder) view.getTag();
                 if (file_select.FileFilter(BasicParams.getInstance().getSelectableFileTypes())) {
-                    if (SelectNum < BasicParams.getInstance().getMaxSelectNum() || viewHolder.ckSelector.isChecked()) {
+                    if ((!reachSelectNumLimit(SelectNum)) || viewHolder.ckSelector.isChecked()) {
                         viewHolder.ckSelector.toggle();
                         if (file_select.getFileType() != FileInfo.FileType.Parent) {
-                            fileListAdapter.ModifyFileSelected(position, viewHolder.ckSelector.isChecked());
+                            fileListAdapter.notifyFileSelected(position, viewHolder.ckSelector.isChecked());
                             if (viewHolder.ckSelector.isChecked()) {
                                 FileSelected.add(file_select.getFilePath());
                             } else {
@@ -434,8 +442,11 @@ public class FileSelectorActivity extends AppCompatActivity {
                 else if (parent.getFilePath().contains("Android/obb")){
                     handleProtectedFiles(parent);
                 }
-                else Log.d("list file", "can not list file");
-                return;
+                else {
+                    Log.d("list file", "can not list file");
+                    if (refreshLayout.isRefreshing()) refreshLayout.setRefreshing(false);
+                    return;
+                }
             }
             handleNormalFiles(files);
         }
@@ -548,6 +559,22 @@ public class FileSelectorActivity extends AppCompatActivity {
             intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, parse);
         }
         startActivityForResult(intent, REQUEST_FOR_DATA_PATH);//开始授权
+    }
+
+    public void updateFileSelectList(List<Integer> select_index_list){
+        if (!onSelect)return;
+        fileListAdapter.clearSelections();
+        FileSelected.clear();
+        for (Integer index : select_index_list) {
+            fileListAdapter.notifyFileSelected(index+1,true);
+            FileSelected.add(currentFileList.get(index+1).getFilePath());//跳过第一行的"返回上一级"
+        }
+        SelectNum = FileSelected.size();
+        changeSelectNum(SelectNum);
+    }
+
+    public void updateFileList(String new_path){
+        refreshFileList(new_path,Orientation.Skip);
     }
 
     @Override

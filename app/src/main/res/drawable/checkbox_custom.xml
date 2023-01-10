@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--    选中状态-->
+    <item android:drawable="@mipmap/check" android:state_checked="true"/>
+    <!--    不选中状态-->
+    <item android:drawable="@mipmap/uncheck" android:state_checked="false"/>
+    <item android:drawable="@mipmap/check" android:state_pressed="true"/>
+    <!--    默认状态-->
+    <item android:drawable="@mipmap/check"/>
+</selector>

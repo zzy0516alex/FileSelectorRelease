@@ -32,10 +32,13 @@ public class FileListAdapter extends BaseAdapter {
     private LayoutInflater inflater;
     private boolean isSelect=false;
 
+    private int themeColor;
     private int fileNameColor;
     private int fileNameSize;
     private int fileInfoColor;
     private int fileInfoSize;
+    private int checkboxDrawable;
+    private boolean isRepaintCheckbox;
 
     public FileListAdapter(ArrayList<FileInfo> fileList, Context mContext) {
         FileList = fileList;
@@ -43,10 +46,13 @@ public class FileListAdapter extends BaseAdapter {
         inflater=LayoutInflater.from(mContext);
         clearSelections();
         FileSelectorTheme theme = BasicParams.getInstance().getTheme();
+        themeColor = theme.getThemeColor();
         fileNameColor = theme.getFileNameColor();
         fileNameSize = theme.getFileNameSize();
         fileInfoColor = theme.getFileInfoColor();
         fileInfoSize = theme.getFileInfoSize();
+        checkboxDrawable = theme.getCheckboxDrawable();
+        isRepaintCheckbox = theme.isReplaceCheckboxBackground();
     }
 
     public void clearSelections() {
@@ -65,7 +71,7 @@ public class FileListAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
-    public void ModifyFileSelected(int position,boolean isSelected) {
+    public void notifyFileSelected(int position, boolean isSelected) {
         SelectionMap.put(position,isSelected);
         notifyDataSetChanged();
     }
@@ -123,6 +129,8 @@ public class FileListAdapter extends BaseAdapter {
         if (isSelect && FileList.get(position).getFileType()!= FileInfo.FileType.Parent)
             viewHolder.ckSelector.setVisibility(View.VISIBLE);
         else viewHolder.ckSelector.setVisibility(View.INVISIBLE);
+
+        if (isRepaintCheckbox)viewHolder.ckSelector.setButtonDrawable(checkboxDrawable);
 
         if (SelectionMap !=null && isSelect && viewHolder.ckSelector!=null) {
                 viewHolder.ckSelector.setChecked(!Objects.isNull(SelectionMap.get(position)) && (boolean) SelectionMap.get(position));

@@ -1,6 +1,7 @@
 package com.z.fileselectorlib.Objects;
 
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Audio;
+import static com.z.fileselectorlib.Objects.FileInfo.FileType.File;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Folder;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Image;
 import static com.z.fileselectorlib.Objects.FileInfo.FileType.Text;
@@ -13,7 +14,10 @@ import android.os.Environment;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import com.z.fileselectorlib.FileSelectorActivity;
 import com.z.fileselectorlib.FileSelectorTheme;
 
 public class BasicParams {
@@ -129,10 +133,10 @@ public class BasicParams {
     public static BasicParams getInitInstance() {
         BasicParams params= InstanceHolder.INSTANCE;
         params.setRootPath(BasicPath);
-        params.setMaxSelectNum(1);
+        params.setMaxSelectNum(-1);
         params.setTips("请选择文件");
         params.setTheme(new FileSelectorTheme());
-        params.setSelectableFileTypes(Folder,Video,Audio,Image,Text,Unknown);
+        params.setSelectableFileTypes(Folder,File);
         params.setNeedMoreOptions(false);
         params.setUseFilter(false);
         return params;
@@ -143,6 +147,6 @@ public class BasicParams {
     }
 
     public interface OnOptionClick{
-        void onclick(Activity activity,int position,String currentPath,ArrayList<String> FilePathSelected);
+        void onclick(FileSelectorActivity activity, String currentPath, List<String> FilePathList, List<String> FilePathSelected);
     }
 }

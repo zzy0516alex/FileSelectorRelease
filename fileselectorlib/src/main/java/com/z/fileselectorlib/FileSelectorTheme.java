@@ -2,6 +2,8 @@ package com.z.fileselectorlib;
 
 import android.graphics.Color;
 
+import androidx.annotation.ColorRes;
+import androidx.annotation.DrawableRes;
 import androidx.core.graphics.ColorUtils;
 
 public class FileSelectorTheme {
@@ -21,6 +23,8 @@ public class FileSelectorTheme {
     private int fileNameSize;//文件(夹)名称字体大小 (sp)
     private int fileInfoColor;//文件信息提示字体颜色 (Color-int)
     private int fileInfoSize;//文件信息提示字体大小 (sp)
+    private int checkboxDrawable;//文件选择框的样式 (Drawable Resource ID)
+    private boolean replaceCheckboxBackground;
 
     public FileSelectorTheme() {
         this.topToolBarBackIcon = R.mipmap.fs_back_arrow;
@@ -37,6 +41,7 @@ public class FileSelectorTheme {
         this.fileNameSize = 18;
         this.fileInfoColor = Color.parseColor("#A9A9A9");
         this.fileInfoSize = 15;
+        this.replaceCheckboxBackground = false;
     }
 
     public int getThemeColor() {
@@ -67,7 +72,7 @@ public class FileSelectorTheme {
         return topToolBarBackIcon;
     }
 
-    public FileSelectorTheme setTopToolBarBackIcon(int topToolBarBackIcon) {
+    public FileSelectorTheme setTopToolBarBackIcon(@DrawableRes int topToolBarBackIcon) {
         this.topToolBarBackIcon = topToolBarBackIcon;
         return this;
     }
@@ -99,7 +104,7 @@ public class FileSelectorTheme {
         return topToolBarMenuIcon;
     }
 
-    public FileSelectorTheme setTopToolBarMenuIcon(int topToolBarMenuIcon) {
+    public FileSelectorTheme setTopToolBarMenuIcon(@DrawableRes int topToolBarMenuIcon) {
         this.topToolBarMenuIcon = topToolBarMenuIcon;
         return this;
     }
@@ -131,7 +136,7 @@ public class FileSelectorTheme {
         return naviBarArrowIcon;
     }
 
-    public FileSelectorTheme setNaviBarArrowIcon(int naviBarArrowIcon) {
+    public FileSelectorTheme setNaviBarArrowIcon(@DrawableRes int naviBarArrowIcon) {
         this.naviBarArrowIcon = naviBarArrowIcon;
         return this;
     }
@@ -180,5 +185,19 @@ public class FileSelectorTheme {
     public FileSelectorTheme setFileInfoSize(int fileInfoSize) {
         this.fileInfoSize = fileInfoSize;
         return this;
+    }
+
+    public int getCheckboxDrawable() {
+        return checkboxDrawable;
+    }
+
+    public FileSelectorTheme setCheckboxDrawable(@DrawableRes int checkboxDrawable) {
+        this.checkboxDrawable = checkboxDrawable;
+        this.replaceCheckboxBackground = true;
+        return this;
+    }
+
+    public boolean isReplaceCheckboxBackground() {
+        return replaceCheckboxBackground;
     }
 }

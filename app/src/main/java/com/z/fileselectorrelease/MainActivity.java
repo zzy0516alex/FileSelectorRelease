@@ -15,6 +15,7 @@ import com.z.fileselectorlib.Utils.FileUtil;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -24,29 +25,39 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         FileSelectorTheme theme = new FileSelectorTheme();
         theme.setThemeColor(getColor(R.color.colorPrimary));
+//                .setCheckboxDrawable(R.drawable.checkbox_custom)
+//                .setTopToolBarBackIcon(R.mipmap.back);
 
         FileSelectorSettings settings=new FileSelectorSettings();
         settings.setRootPath(FileSelectorSettings.getSystemRootPath() + "/Android/data")
                 .setTheme(theme)
-                .setMaxFileSelect(2)
+                .setMaxFileSelect(-1)
                 .setTitle("请选择文件夹")
-                .setFileTypesToSelect(FileInfo.FileType.File, FileInfo.FileType.Text)
+                .setFileTypesToSelect(FileInfo.FileType.File, FileInfo.FileType.Folder)
                 .setFileListRequestCode(544)
                 .setCustomizedIcons(new String[]{".apk"},this,R.mipmap.file_custom_apk)
-                .setMoreOptions(new String[]{"新建文件夹", "删除文件"},
-                        (activity, position, currentPath, FilePathSelected) -> {
+                .setMoreOptions(new String[]{"新建文件夹", "删除文件","反选","转到系统目录"},
+                        (activity, currentPath, FilePathList, FilePathSelected) -> {
                             File Folder =new File(currentPath,"新文件夹");
                             if(!Folder.exists()){
                                 Folder.mkdir();
                             }
-                        }, (activity, position, currentPath, FilePathSelected) -> {
+                        }, (activity, currentPath, FilePathList, FilePathSelected) -> {
                             if (FilePathSelected!=null){
-                                for (String path :
-                                        FilePathSelected) {
+                                for (String path : FilePathSelected) {
                                     File delFile=new File(path);
                                     delFile.delete();
                                 }
                             }
+                        },(activity, currentPath, FilePathList, FilePathSelected) -> {
+                            List<Integer>selectList = new ArrayList<>();
+                            for (int i = 0; i < FilePathList.size(); i++) {
+                                if (FilePathSelected.contains(FilePathList.get(i)))continue;
+                                selectList.add(i);
+                            }
+                            activity.updateFileSelectList(selectList);
+                        },(activity, currentPath, FilePathList, FilePathSelected) -> {
+                            activity.updateFileList(FileSelectorSettings.getSystemRootPath()+"/Android/data");
                         })
                 .show(this);
     }
