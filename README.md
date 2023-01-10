@@ -58,27 +58,6 @@ FileSelectorSettings settings = new FileSelectorSettings();
                         .setMaxFileSelect(2)//最大文件选择数
                         .setTitle("请选择文件夹")//标题
                         .setFileTypesToSelect(FileInfo.FileType.Folder)//可选择文件类型
-                        .setMoreOPtions(new String[]{"新建文件夹", "删除文件"},
-                                new BasicParams.OnOptionClick() {
-                                    @Override
-                                    public void onclick(Activity activity, int position, String currentPath, ArrayList<String> FilePathSelected) {
-                                        File Folder =new File(currentPath,"新文件夹");
-                                        if(!Folder.exists()){
-                                            Folder.mkdir();
-                                        }
-                                    }
-                                }, new BasicParams.OnOptionClick() {
-                                    @Override
-                                    public void onclick(Activity activity, int position, String currentPath, ArrayList<String> FilePathSelected) {
-                                        if (FilePathSelected!=null){
-                                            for (String path :
-                                                    FilePathSelected) {
-                                                File delFile=new File(path);
-                                                delFile.delete();
-                                            }
-                                        }
-                                    }
-                                })//更多功能拓展
                         .show(MainActivity.this);//显示
 ```
 
@@ -101,13 +80,46 @@ FileSelectorSettings settings = new FileSelectorSettings();
     }
 ```
 
+## 添加拓展功能菜单
+
+```java
+FileSelectorSettings settings=new FileSelectorSettings();
+        settings.setMoreOptions(new String[]{"新建文件夹", "删除文件","反选","转到系统目录"},
+                        (activity, currentPath, FilePathList, FilePathSelected) -> {
+                            File Folder =new File(currentPath,"新文件夹");
+                            if(!Folder.exists()){
+                                Folder.mkdir();
+                            }
+                        }, (activity, currentPath, FilePathList, FilePathSelected) -> {
+                            if (FilePathSelected!=null){
+                                for (String path : FilePathSelected) {
+                                    File delFile=new File(path);
+                                    delFile.delete();
+                                }
+                            }
+                        },(activity, currentPath, FilePathList, FilePathSelected) -> {
+                            List<Integer>selectList = new ArrayList<>();
+                            for (int i = 0; i < FilePathList.size(); i++) {
+                                if (FilePathSelected.contains(FilePathList.get(i)))continue;
+                                selectList.add(i);
+                            }
+                            activity.updateFileSelectList(selectList);
+                        },(activity, currentPath, FilePathList, FilePathSelected) -> {
+                            activity.updateFileList(FileSelectorSettings.getSystemRootPath()+"/Android/data");
+                        })
+                .show(this);
+```
+设置了拓展功能菜单后，顶栏右上角会出现功能菜单图标，点击后将弹出你自定义的菜单栏。需要注意的是，在setMoreOptions方法中参数一与参数二的长度需一致。
+本方法提供四个回调参数(详见后文**BasicParams.OnOptionClick**部分)，开发者可以利用这些参数进行拓展。
+上面实例代码中给出了四种常见的选项供开发者参考。
+
 ## 自定义文件显示和图标
 ```java
 FileSelectorSettings settings = new FileSelectorSettings();
             settings.setRootPath(FileSelectorSettings.getSystemRootPath())
                     .setMaxFileSelect(2)
                     .setTitle("请选择文件夹")
-                    .setFileTypesToSelect(FileInfo.FileType.Unknown)//选择自定义后缀的文件此处参数需为Unknown
+                    .setFileTypesToSelect(FileInfo.FileType.Unknown)//选择自定义后缀的文件此处参数需为Unknown/File
                     .setFileTypesToShow(".cer")//自定义可见的文件后缀
                     .setCustomizedIcons(new String[]{".cer"},context,R.mipmap.file_cert)//自定义文件图标
                     .show(MainActivity.this);
@@ -188,7 +200,7 @@ settings.setRootPath(FileSelectorSettings.getSystemRootPath() + "/Android/data")
 
 下面图片中给出了UI的属性作用位置的序号：
 
-![UI属性编号](https://img-blog.csdnimg.cn/941f10aeb70f43bd93e226511a275a59.png)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/3d3f3e9e02ab49bab7601f920a298f86.png)
 
 | 属性 | 入参类型 | 注释 | 对应UI位置 |
 |--|--|--|:--:|
@@ -204,6 +216,7 @@ settings.setRootPath(FileSelectorSettings.getSystemRootPath() + "/Android/data")
 | fileNameSize | sp | 文件(夹)名称字体大小 |7|
 | fileInfoColor | Color-int/Color-String | 文件信息提示字体颜色 |8|
 | fileInfoSize | sp | 文件信息提示字体大小 |8|
+| checkboxDrawable | Resource ID | 勾选框的样式 |9|
 
 表中每个属性均有set方法，并有默认的属性，故该设置不是必须的设置。
 
@@ -212,13 +225,13 @@ settings.setRootPath(FileSelectorSettings.getSystemRootPath() + "/Android/data")
 |--|--|--|
 | FileSelectorSettings setRootPath(String path) | 设置起始目录 |无|
 | FileSelectorSettings setFileListRequestCode(int requestCode)| 设置Activity请求码 |默认为512|
-| FileSelectorSettings setMaxFileSelect(int num) | 设置最大文件选择数 |无|
+| FileSelectorSettings setMaxFileSelect(int num) | 设置最大文件选择数 |默认为-1，即不限制选择数量|
 | FileSelectorSettings setTitle(String title) | 设置标题 |无|
 | FileSelectorSettings setTheme(FileSelectorTheme theme) | 设置界面主题(大部分图标及字体) |无|
-| FileSelectorSettings setFileTypesToSelect(FileInfo.FileType ... fileTypes)| 设置可选择的文件类型|文件类型不能包含parent|
+| FileSelectorSettings setFileTypesToSelect(FileInfo.FileType ... fileTypes)| 设置可选择的文件类型|可以多选，但不能包含parent类型|
 | FileSelectorSettings setFileTypesToShow(String ... extensions)| 设置可见的文件类型|后缀示例".txt",不填写则全部显示|
 | FileSelectorSettings setCustomizedIcons(String[] extensions, Context context, int ... icon_ids)| 设置自定义文件图标|后缀名和图标资源id应一一对应|
-| FileSelectorSettings setMoreOPtions(String[] optionsName, BasicParams.OnOptionClick...onOptionClicks) | 设置更多选项，第一个参数为选项名，第二个参数为选项点击事件 |选项名和点击响应数量必须对应|
+| FileSelectorSettings setMoreOptions(String[] optionsName, BasicParams.OnOptionClick...onOptionClicks) | 设置更多选项，第一个参数为选项名，第二个参数为选项点击事件 |选项名和点击响应数量必须对应|
 | static String getSystemRootPath() | 获取系统外部存储根目录：/storage/emulated/0 |无|
 
 ## FileInfo.FileType
@@ -230,6 +243,7 @@ settings.setRootPath(FileSelectorSettings.getSystemRootPath() + "/Android/data")
 | Audio | 音频文件 |
 | Text | 文本文件 |
 | Unknown | 除上述类型以外的其他文件类型 |
+| File | 除Folder类型以外的其他文件类型 |
 | Parent | 不可用的变量 |
 
 ## FileInfo.AccessType
@@ -242,11 +256,17 @@ settings.setRootPath(FileSelectorSettings.getSystemRootPath() + "/Android/data")
 接口抽象方法：onclick
 
 ```java
-void onclick(Activity activity,int position,String currentPath,ArrayList<String> FilePathSelected);
+void onclick(FileSelectorActivity activity, String currentPath, List<String> FilePathList, List<String> FilePathSelected);
 ```
 |参数| 解释 |
 |--|--|
 | activity | 文件选择器的activity |
-| position | 当前点击的位置 |
 | currentPath | 当前所在的目录 |
-| FilePathSelected | 当前用户选择的文件列表 |
+| FilePathList | 当前的文件(路径)列表 |
+| FilePathSelected | 当前用户选择的文件(路径)列表 |
+
+FileSelectorActivity提供的公共方法：
+|方法| 解释 |
+|--|--|
+| void updateFileSelectList(List\<Integer> select_index_list) | 输入需要选中的列表项的索引的集合，更新当前列表的勾选状态， |
+| void updateFileList(String new_path) | 输入用新的文件夹路径，用该路径更新文件列表 |
