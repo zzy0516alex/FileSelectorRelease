@@ -52,12 +52,14 @@ import com.z.fileselectorlib.adapter.NavigationAdapter;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Stack;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 public class FileSelectorActivity extends AppCompatActivity {
     private static final int REQUEST_FOR_DATA_PATH = 20;
-    private enum Orientation{Forward, Backward, Init, Skip};
+    private enum Orientation{Forward, Backward, Init, Skip};//标记访问文件夹的方向，如果回退则移动到上一级的父文件夹位置
 
     private FileList fileList;
     private ArrayList<FileInfo> currentFileList = new ArrayList<>();
@@ -89,7 +91,7 @@ public class FileSelectorActivity extends AppCompatActivity {
     private boolean init = true;//初次加载文件目录
     private boolean onSelect = false;
     private int SelectNum=0;
-    private int parent_list_pos = 0;//父级文件列表的顶部元素索引
+    private Stack<Integer> parentListPos = new Stack<>();//父级文件列表的顶部元素索引(父文件夹的位置)
     private Orientation orientation = Orientation.Init;
 
     @Override
@@ -249,6 +251,12 @@ public class FileSelectorActivity extends AppCompatActivity {
     private void initBottomView() {
         BottomViewShow(View.INVISIBLE,0);
         select_confirm.setOnClickListener(v -> {
+            int minSelectNum = BasicParams.getInstance().getMinSelectNum();
+            if(FileSelected.size()< minSelectNum){
+                String info = String.format(Locale.CHINA,"请至少选择%d个",minSelectNum);
+                Toast.makeText(activity, info, Toast.LENGTH_SHORT).show();
+                return;
+            }
             Intent intent=new Intent();
             Bundle bundle_back=new Bundle();
             bundle_back.putStringArrayList(FileSelectorSettings.FILE_PATH_LIST_REQUEST,FileSelected);
@@ -279,6 +287,20 @@ public class FileSelectorActivity extends AppCompatActivity {
                 fileListAdapter.clearSelections();
                 fileListAdapter.setSelect(true);
                 onSelect=true;
+                //select current item
+                FileInfo file_select=currentFileList.get(position);
+                if (file_select.FileFilter(BasicParams.getInstance().getSelectableFileTypes())) {
+                    FileListAdapter.ViewHolder viewHolder = (FileListAdapter.ViewHolder) view.getTag();
+                    if(!viewHolder.ckSelector.isChecked())viewHolder.ckSelector.toggle();
+                    fileListAdapter.notifyFileSelected(position, viewHolder.ckSelector.isChecked());
+                    if (viewHolder.ckSelector.isChecked()) {
+                        FileSelected.add(file_select.getFilePath());
+                    } else {
+                        FileSelected.remove(file_select.getFilePath());
+                    }
+                    SelectNum = FileSelected.size();
+                    changeSelectNum(SelectNum);
+                }
             }
             return true;
         };
@@ -370,7 +392,8 @@ public class FileSelectorActivity extends AppCompatActivity {
                 }else Toast.makeText(activity, "该文件类型不可选", Toast.LENGTH_SHORT).show();
             }else {
                 if (file_select.getFileType() == FileInfo.FileType.Folder ) {
-                    parent_list_pos = lvFileList.getFirstVisiblePosition();
+                    int parent_pos = lvFileList.getFirstVisiblePosition();
+                    parentListPos.push(parent_pos);
                     refreshFileList(file_select, Orientation.Forward);
                 }
                 else if (file_select.getFileType() == FileInfo.FileType.Parent){
@@ -456,6 +479,11 @@ public class FileSelectorActivity extends AppCompatActivity {
     }
 
     private void handleNormalFiles(File[] files) {
+        if(files.length==0){
+            if (refreshLayout.isRefreshing())
+                refreshLayout.setRefreshing(false);
+            return;
+        }
         int parts = files.length/20;
         CountDownLatch countDownLatch = new CountDownLatch(parts+1);
         int index = 0;
@@ -477,8 +505,10 @@ public class FileSelectorActivity extends AppCompatActivity {
             try {
                 countDownLatch.await();
                 runOnUiThread(()->{
-                    if (orientation == Orientation.Backward)
-                        lvFileList.post(()-> lvFileList.setSelection(parent_list_pos));
+                    if (orientation == Orientation.Backward) {
+                        int pos = parentListPos.empty()?0:parentListPos.pop();
+                        lvFileList.post(() -> lvFileList.setSelection(pos));
+                    }
                     if (refreshLayout.isRefreshing())
                         refreshLayout.setRefreshing(false);
                 });
@@ -533,8 +563,10 @@ public class FileSelectorActivity extends AppCompatActivity {
                     try {
                         countDownLatch.await();
                         runOnUiThread(()->{
-                            if (orientation == Orientation.Backward)
-                                lvFileList.post(()-> lvFileList.setSelection(parent_list_pos));
+                            if (orientation == Orientation.Backward) {
+                                int pos = parentListPos.empty()?0:parentListPos.pop();
+                                lvFileList.post(() -> lvFileList.setSelection(pos));
+                            }
                             if (refreshLayout.isRefreshing())
                                 refreshLayout.setRefreshing(false);
                         });

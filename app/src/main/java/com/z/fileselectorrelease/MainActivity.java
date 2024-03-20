@@ -31,9 +31,10 @@ public class MainActivity extends AppCompatActivity {
         FileSelectorSettings settings=new FileSelectorSettings();
         settings.setRootPath(FileSelectorSettings.getSystemRootPath() + "/Android/data")
                 .setTheme(theme)
-                .setMaxFileSelect(-1)
+                .setMaxFileSelect(2)
+                .setMinFileSelect(2)
                 .setTitle("请选择文件夹")
-                .setFileTypesToSelect(FileInfo.FileType.File, FileInfo.FileType.Folder)
+                .setFileTypesToSelect(FileInfo.FileType.Folder)
                 .setFileListRequestCode(544)
                 .setCustomizedIcons(new String[]{".apk"},this,R.mipmap.file_custom_apk)
                 .setMoreOptions(new String[]{"新建文件夹", "删除文件","反选","转到系统目录"},

@@ -36,6 +36,11 @@ public class FileSelectorSettings {
         return this;
     }
 
+    public FileSelectorSettings setMinFileSelect(int num){
+        basicParams.setMinSelectNum(num);
+        return this;
+    }
+
     public FileSelectorSettings setTitle(String title){
         basicParams.setTips(title);
         return this;
@@ -112,10 +117,6 @@ public class FileSelectorSettings {
         boolean permissionGranted = PermissionUtil.isStoragePermissionGranted(activity);
         if (!permissionGranted)
             Toast.makeText(activity, "请求文件读写权限", Toast.LENGTH_SHORT).show();
-//        File[] test=(new File(basicParams.getRootPath())).listFiles();
-//        if (test==null){
-//            throw new IllegalArgumentException("初始路径不是一个目录");
-//        }
         Intent intent=new Intent(activity,FileSelectorActivity.class);
         activity.startActivityForResult(intent, FILE_LIST_REQUEST_CODE);
     }

@@ -24,6 +24,7 @@ public class BasicParams {
     public static final String BasicPath=Environment.getExternalStorageDirectory().getAbsolutePath();
     private String RootPath;
     private int MaxSelectNum;
+    private int MinSelectNum;
     private String tips;
     private FileSelectorTheme theme;
     private FileInfo.FileType[] selectableFileTypes;
@@ -48,6 +49,14 @@ public class BasicParams {
 
     public void setMaxSelectNum(int maxSelectNum) {
         MaxSelectNum = maxSelectNum;
+    }
+
+    public int getMinSelectNum() {
+        return MinSelectNum;
+    }
+
+    public void setMinSelectNum(int minSelectNum) {
+        MinSelectNum = minSelectNum;
     }
 
     public String getTips() {
@@ -134,6 +143,7 @@ public class BasicParams {
         BasicParams params= InstanceHolder.INSTANCE;
         params.setRootPath(BasicPath);
         params.setMaxSelectNum(-1);
+        params.setMinSelectNum(0);
         params.setTips("请选择文件");
         params.setTheme(new FileSelectorTheme());
         params.setSelectableFileTypes(Folder,File);
