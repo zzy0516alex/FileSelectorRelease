@@ -226,6 +226,7 @@ settings.setRootPath(FileSelectorSettings.getSystemRootPath() + "/Android/data")
 | FileSelectorSettings setRootPath(String path) | 设置起始目录 |无|
 | FileSelectorSettings setFileListRequestCode(int requestCode)| 设置Activity请求码 |默认为512|
 | FileSelectorSettings setMaxFileSelect(int num) | 设置最大文件选择数 |默认为-1，即不限制选择数量|
+| FileSelectorSettings setMinFileSelect(int num) | 设置最小文件选择数 |默认为0。若选择的文件数小于该值，点击确定按钮不返回|
 | FileSelectorSettings setTitle(String title) | 设置标题 |无|
 | FileSelectorSettings setTheme(FileSelectorTheme theme) | 设置界面主题(大部分图标及字体) |无|
 | FileSelectorSettings setFileTypesToSelect(FileInfo.FileType ... fileTypes)| 设置可选择的文件类型|可以多选，但不能包含parent类型|
