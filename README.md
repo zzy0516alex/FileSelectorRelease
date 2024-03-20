@@ -34,7 +34,7 @@ allprojects {
 gradle:app 中
 
 ```java
-implementation 'com.github.zzy0516alex:FileSelectorRelease:v6.0'
+implementation 'com.github.zzy0516alex:FileSelectorRelease:v6.1'
 ```
 Manifest中
 
